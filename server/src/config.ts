@@ -9,6 +9,8 @@ export const config = {
   databaseUrl:
     process.env.DATABASE_URL ??
     "postgresql://fintrack:fintrack@localhost:5432/fintrack",
+  // True only when DATABASE_URL was explicitly provided (not the localhost default).
+  databaseUrlConfigured: Boolean(process.env.DATABASE_URL),
   port: Number(process.env.PORT ?? 4000),
   quote: {
     // Legacy single-URL knobs (kept for backward compatibility).

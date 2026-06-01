@@ -11,6 +11,15 @@
 import serverless from "serverless-http";
 import { createApp } from "../../server/dist/app.js";
 import { ensureSchema } from "../../server/dist/db/pool.js";
+import { config } from "../../server/dist/config.js";
+
+function jsonError(message: string) {
+  return {
+    statusCode: 500,
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ok: false, error: message }),
+  };
+}
 
 const app = createApp();
 
@@ -30,20 +39,26 @@ export const handler = async (event: unknown, context: unknown) => {
   // Reuse the pool across warm invocations; do not close it between requests.
   (context as { callbackWaitsForEmptyEventLoop?: boolean }).callbackWaitsForEmptyEventLoop = false;
 
+  // Most common deploy mistake: DATABASE_URL not set, so it defaults to
+  // localhost (which does not exist in serverless) -> ECONNREFUSED. Detect it
+  // explicitly and tell the user exactly what to do.
+  if (!config.databaseUrlConfigured) {
+    return jsonError(
+      "DATABASE_URL não configurada. Crie um Postgres gerenciado (ex.: Neon, " +
+        "https://neon.tech) e adicione a connection string em Netlify → Site " +
+        "settings → Environment variables como DATABASE_URL, depois refaça o deploy."
+    );
+  }
+
   // No separate migrate step in serverless: bootstrap the (idempotent) schema
   // on the first request of a cold start. Fail loudly — never mask DB errors.
   try {
     await ensureSchema();
   } catch (err) {
-    return {
-      statusCode: 500,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        ok: false,
-        error: `Banco de dados indisponível: ${(err as Error).message}. ` +
-          `Verifique DATABASE_URL (Postgres gerenciado com SSL, ex.: Neon/Supabase).`,
-      }),
-    };
+    return jsonError(
+      `Banco de dados indisponível: ${(err as Error).message}. ` +
+        `Verifique DATABASE_URL (Postgres gerenciado com SSL, ex.: Neon/Supabase).`
+    );
   }
 
   return wrapped(event as never, context as never);
