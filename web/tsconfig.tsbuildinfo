@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/components/ui.tsx","./src/lib/api.ts","./src/lib/format.ts","./src/lib/useFetch.ts","./src/pages/Audit.tsx","./src/pages/Dashboard.tsx","./src/pages/Goals.tsx","./src/pages/NetWorth.tsx","./src/pages/Quotes.tsx","./src/pages/Sales.tsx","./src/pages/Stocks.tsx","./src/pages/Transactions.tsx"],"version":"5.9.3"}
