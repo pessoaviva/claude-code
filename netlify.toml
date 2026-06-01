@@ -27,3 +27,11 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Variáveis solicitadas no assistente do botão "Deploy to Netlify".
+# O texto à direita é a descrição mostrada ao usuário durante o deploy.
+[template.environment]
+  DATABASE_URL = "Connection string de um Postgres gerenciado com SSL (ex.: Neon, pooled, com ?sslmode=require)"
+  BRAPI_TOKEN = "Opcional — token do brapi.dev para cotações automáticas"
+  ALPHAVANTAGE_KEY = "Opcional — chave da Alpha Vantage (fallback de cotações)"
+  FINNHUB_KEY = "Opcional — chave do Finnhub (fallback de cotações)"

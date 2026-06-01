@@ -99,6 +99,14 @@ Front-end em `http://localhost:5173` (proxy `/api` → `:4000`).
 
 ## Deploy no Netlify
 
+### Caminho rápido (botão)
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/pessoaviva/claude-code)
+
+> Troque a URL do botão pelo seu repositório, se for outro. O assistente já
+> pergunta a `DATABASE_URL` (e as chaves opcionais) durante o deploy — basta
+> colar a connection string do seu Postgres gerenciado.
+
 Netlify **não** roda um servidor Express persistente nem fornece banco de dados.
 Por isso o backend é empacotado como **Netlify Function** (mesma app Express via
 `serverless-http`) e o Postgres é externo (gerenciado, com SSL).
