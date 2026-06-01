@@ -9,10 +9,10 @@ import { computePortfolio } from "../services/portfolio.js";
 
 export const quotesRouter = Router();
 
-async function saveQuote(ticker: string, price: Decimal, source: "auto" | "manual") {
+async function saveQuote(ticker: string, price: Decimal, source: "auto" | "manual", provider: string | null = null) {
   const { rows } = await query(
-    `INSERT INTO quotes (ticker, price, source) VALUES ($1,$2,$3) RETURNING *`,
-    [ticker, price.toFixed(8), source]
+    `INSERT INTO quotes (ticker, price, source, provider) VALUES ($1,$2,$3,$4) RETURNING *`,
+    [ticker, price.toFixed(8), source, provider]
   );
   return rows[0];
 }
@@ -22,7 +22,7 @@ quotesRouter.get(
   "/",
   asyncHandler(async (_req, res) => {
     const { rows } = await query(`
-      SELECT DISTINCT ON (ticker) ticker, price, source, fetched_at
+      SELECT DISTINCT ON (ticker) ticker, price, source, provider, fetched_at
       FROM quotes ORDER BY ticker, fetched_at DESC
     `);
     ok(res, rows);
@@ -39,15 +39,15 @@ quotesRouter.post(
     const ticker = req.params.ticker.toUpperCase();
     try {
       const fetched = await fetchQuoteAuto(ticker);
-      const row = await saveQuote(ticker, Decimal.from(fetched.price), "auto");
-      await audit({ category: "quote", entity: "quote", entityId: ticker, action: "update_auto", after: row });
-      ok(res, { quote: row, portfolio: await computePortfolio() });
+      const row = await saveQuote(ticker, Decimal.from(fetched.price), "auto", fetched.provider);
+      await audit({ category: "quote", entity: "quote", entityId: ticker, action: "update_auto", details: { provider: fetched.provider }, after: row });
+      ok(res, { quote: row, provider: fetched.provider, portfolio: await computePortfolio() });
     } catch (err) {
       if (err instanceof QuoteProviderError) {
         throw new AppError(
           502,
           `Cotação automática indisponível para ${ticker}: ${err.message}. Use o modo manual.`,
-          { ticker, mode: "manual_required" }
+          { ticker, mode: "manual_required", attempts: err.attempts }
         );
       }
       throw err;

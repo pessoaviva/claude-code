@@ -9,10 +9,11 @@ import { computePortfolio } from "../services/portfolio.js";
 export const networthRouter = Router();
 
 /**
- * Patrimônio:
- *  - oficial   = soma dos valores oficiais dos ativos cadastrados + caixa (ganhos - gastos)
- *  - estimado  = oficial, mas usando carteira de ações a mercado quando houver cotação
- *  - distribuição dos ativos e evolução patrimonial
+ * Patrimônio com classificação A/B/C das cotações:
+ *  - OFICIAL  = caixa + ativos oficiais + ações em nível A e B (a mercado).
+ *  - ESTIMADO = caixa + ativos estimados + ações A, B e C (última cotação conhecida).
+ *  - DIFERENÇA = estimado − oficial.
+ *  - PARCIAL  = quando há ações nível C (bloqueadas): conta, impacto e motivo.
  */
 networthRouter.get(
   "/",
@@ -27,29 +28,53 @@ networthRouter.get(
     const cash = Decimal.from(incomeTotal.rows[0].total).sub(expenseTotal.rows[0].total);
 
     const portfolio = await computePortfolio();
-    const investedOfficial = Decimal.from(portfolio.totals.invested);
-    const investedMarket = Decimal.from(portfolio.totals.currentValue);
+    const stocksOfficial = Decimal.from(portfolio.totals.officialValue); // A + B
+    const stocksEstimated = Decimal.from(portfolio.totals.estimatedValue); // A + B + C
 
     const officialAssets = sum(assets.rows.map((a) => a.official_value));
     const estimatedAssets = sum(assets.rows.map((a) => a.estimated_value));
 
-    // Official: caixa + ativos oficiais + ações ao preço médio (custo).
-    const official = cash.add(officialAssets).add(investedOfficial);
-    // Estimated: caixa + ativos estimados + ações a mercado (cotação atual).
-    const estimated = cash.add(estimatedAssets).add(investedMarket);
+    const official = cash.add(officialAssets).add(stocksOfficial);
+    const estimated = cash.add(estimatedAssets).add(stocksEstimated);
+    const difference = estimated.sub(official);
+
+    // Ativos bloqueados (nível C) compõem o aviso de "Patrimônio Parcial".
+    const blocked = portfolio.positions
+      .filter((p) => p.reliability.level === "C")
+      .map((p) => ({
+        ticker: p.ticker,
+        company: p.company,
+        reason: p.reliability.reason,
+        estimatedValue: p.currentValue, // última cotação conhecida (ou null)
+      }));
 
     const distribution = [
       { label: "Caixa", value: cash.toFixed(2) },
-      { label: "Ações (mercado)", value: investedMarket.toFixed(2) },
+      { label: "Ações (A+B)", value: stocksOfficial.toFixed(2) },
+      { label: "Ações nível C", value: Decimal.from(portfolio.totals.blockedImpact).toFixed(2) },
       { label: "Outros ativos", value: estimatedAssets.toFixed(2) },
     ];
 
     ok(res, {
       official: official.toFixed(2),
       estimated: estimated.toFixed(2),
+      difference: difference.toFixed(2),
       cash: cash.toFixed(2),
-      stocksInvested: investedOfficial.toFixed(2),
-      stocksMarket: investedMarket.toFixed(2),
+      stocksInvested: portfolio.totals.invested,
+      stocksOfficial: stocksOfficial.toFixed(2),
+      stocksEstimated: stocksEstimated.toFixed(2),
+      reliability: {
+        countA: portfolio.totals.countA,
+        countB: portfolio.totals.countB,
+        countC: portfolio.totals.countC,
+      },
+      partial: {
+        isPartial: portfolio.totals.blockedCount > 0,
+        blockedCount: portfolio.totals.blockedCount,
+        blockedImpact: portfolio.totals.blockedImpact,
+        reason: "Ativos sem cotação confiável (nível C) ficam fora do patrimônio oficial.",
+        blocked,
+      },
       assets: assets.rows,
       distribution,
     });

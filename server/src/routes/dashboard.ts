@@ -21,7 +21,8 @@ dashboardRouter.get(
     const balance = totalIncome.sub(totalExpense);
 
     const portfolio = await computePortfolio();
-    const investedMarket = Decimal.from(portfolio.totals.currentValue);
+    // Net worth uses the estimated market value (A+B+C last known quote).
+    const investedMarket = Decimal.from(portfolio.totals.estimatedValue);
     const netWorth = balance.add(investedMarket);
 
     // Monthly income vs expense series (last 6 months).
@@ -44,10 +45,16 @@ dashboardRouter.get(
       income: totalIncome.toFixed(2),
       expenses: totalExpense.toFixed(2),
       investments: portfolio.totals.invested,
-      investmentsMarket: portfolio.totals.currentValue,
+      investmentsMarket: portfolio.totals.estimatedValue,
       dividends: Decimal.from(dividends.rows[0].total).toFixed(2),
       portfolioReturnPct: portfolio.totals.returnPct,
       unpricedPositions: portfolio.totals.unpricedPositions,
+      reliability: {
+        countA: portfolio.totals.countA,
+        countB: portfolio.totals.countB,
+        countC: portfolio.totals.countC,
+        blockedCount: portfolio.totals.blockedCount,
+      },
       charts: {
         incomeByMonth: incomeByMonth.rows.reverse(),
         expenseByMonth: expenseByMonth.rows.reverse(),

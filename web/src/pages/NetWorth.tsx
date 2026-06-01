@@ -1,16 +1,21 @@
 import { useState } from "react";
 import { api } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
-import { brl, dateBR } from "../lib/format";
+import { brl, dateBR, signColor } from "../lib/format";
 import { Banner, BarChart, Button, Card, Input, Stat, Table } from "../components/ui";
 
 interface Asset { id: string; name: string; type: string; official_value: string; estimated_value: string; as_of: string }
+interface Blocked { ticker: string; company: string; reason: string; estimatedValue: string | null }
 interface NetWorthData {
   official: string;
   estimated: string;
+  difference: string;
   cash: string;
   stocksInvested: string;
-  stocksMarket: string;
+  stocksOfficial: string;
+  stocksEstimated: string;
+  reliability: { countA: number; countB: number; countC: number };
+  partial: { isPartial: boolean; blockedCount: number; blockedImpact: string; reason: string; blocked: Blocked[] };
   assets: Asset[];
   distribution: { label: string; value: string }[];
 }
@@ -42,11 +47,23 @@ export function NetWorth() {
     <div className="space-y-4">
       {data && (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <Stat label="Patrimônio oficial" value={brl(data.official)} sub="caixa + ativos oficiais + ações (custo)" />
-          <Stat label="Patrimônio estimado" value={brl(data.estimated)} sub="ações a mercado" />
-          <Stat label="Caixa" value={brl(data.cash)} />
-          <Stat label="Ações (mercado)" value={brl(data.stocksMarket)} />
+          <Stat label="Patrimônio oficial" value={brl(data.official)} sub="apenas ativos nível A e B" />
+          <Stat label="Patrimônio estimado" value={brl(data.estimated)} sub="A + B + última cotação de C" />
+          <Stat label="Diferença" value={brl(data.difference)} accent={signColor(data.difference)} sub="estimado − oficial" />
+          <Stat label="Confiabilidade" value={`${data.reliability.countA}A · ${data.reliability.countB}B · ${data.reliability.countC}C`} />
         </div>
+      )}
+
+      {data?.partial.isPartial && (
+        <Banner kind="warn">
+          <strong>Patrimônio Parcial.</strong> {data.partial.blockedCount} ativo(s) bloqueado(s) — impacto estimado {brl(data.partial.blockedImpact)}.
+          <div className="mt-1 text-xs">{data.partial.reason}</div>
+          <ul className="mt-1 list-inside list-disc text-xs">
+            {data.partial.blocked.map((b) => (
+              <li key={b.ticker}>{b.ticker} — {b.reason} {b.estimatedValue ? `(última cotação ${brl(b.estimatedValue)})` : "(sem cotação conhecida)"}</li>
+            ))}
+          </ul>
+        </Banner>
       )}
 
       {data && (

@@ -9,6 +9,7 @@ import { salesRouter } from "./routes/sales.js";
 import { goalsRouter } from "./routes/goals.js";
 import { dashboardRouter } from "./routes/dashboard.js";
 import { auditRouter } from "./routes/audit.js";
+import { diagnosticsRouter } from "./routes/diagnostics.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 export function createApp() {
@@ -27,6 +28,7 @@ export function createApp() {
   app.use("/api/sales", salesRouter);
   app.use("/api/goals", goalsRouter);
   app.use("/api/audit", auditRouter);
+  app.use("/api/diagnostics", diagnosticsRouter);
 
   app.use(errorHandler);
   return app;

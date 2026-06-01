@@ -23,7 +23,8 @@ async function seed() {
     ('PETR4', '38.50', 'manual'),
     ('ITUB4', '32.00', 'manual')`);
   await pool.query(`INSERT INTO goals (type, name, target, current) VALUES
-    ('patrimonio', 'Primeiro R$ 100 mil', '100000', '8500')`);
+    ('patrimonio', 'Primeiro R$ 100 mil', '100000', '8500'),
+    ('renda_passiva', 'Renda passiva R$ 500/mês', '500', '0')`);
 
   console.log("✓ Seed concluído.");
   await pool.end();

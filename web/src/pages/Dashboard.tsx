@@ -13,6 +13,7 @@ interface DashboardData {
   dividends: string;
   portfolioReturnPct: string;
   unpricedPositions: number;
+  reliability: { countA: number; countB: number; countC: number; blockedCount: number };
   charts: {
     incomeByMonth: { month: string; total: string }[];
     expenseByMonth: { month: string; total: string }[];
@@ -41,9 +42,16 @@ export function Dashboard() {
         <Stat label="Rentabilidade carteira" value={pct(data.portfolioReturnPct)} accent={signColor(data.portfolioReturnPct)} />
       </div>
 
-      {data.unpricedPositions > 0 && (
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-slate-400">Saúde da carteira:</span>
+        <span className="rounded border border-emerald-700 bg-emerald-900/50 px-2 py-0.5 text-emerald-200">{data.reliability.countA} confiáveis (A)</span>
+        <span className="rounded border border-amber-700 bg-amber-900/50 px-2 py-0.5 text-amber-200">{data.reliability.countB} desatualizadas (B)</span>
+        <span className="rounded border border-rose-700 bg-rose-900/50 px-2 py-0.5 text-rose-200">{data.reliability.countC} não confiáveis (C)</span>
+      </div>
+
+      {data.reliability.blockedCount > 0 && (
         <Banner kind="warn">
-          {data.unpricedPositions} ação(ões) sem cotação — atualize em <strong>Cotações</strong> para refletir no patrimônio estimado.
+          {data.reliability.blockedCount} ativo(s) em nível C com L/P bloqueado — atualize em <strong>Cotações</strong> e veja detalhes em <strong>Patrimônio</strong>.
         </Banner>
       )}
 

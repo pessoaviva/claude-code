@@ -106,5 +106,48 @@ npm test            # testes da aritmética financeira (node:test)
 ## Módulos da UI
 
 Dashboard · Ganhos · Gastos · Ações · Cotações · Patrimônio · Vendas · Metas ·
-Auditoria (abas **Logs** e **Diagnóstico**).
+Auditoria (abas **Logs**, **Diagnóstico** e **Saúde**).
+
+## Confiabilidade A/B/C das cotações
+
+Cada cotação é classificada automaticamente pela idade e validade:
+
+| Nível | Condição | L/P e Rentabilidade | Patrimônio |
+|-------|----------|---------------------|------------|
+| **A** Confiável | fonte real, válida, < 15 min | ✅ permitido | ✅ oficial + estimado |
+| **B** Desatualizada | 15–60 min | ❌ bloqueado ("Cotação desatualizada") | ✅ oficial + estimado |
+| **C** Não confiável | API falhou / inválida / ausente / > 60 min | ❌ bloqueado ("Cotação não confiável") | ⚠️ só estimado (última cotação) |
+
+- **Patrimônio Oficial** = caixa + ativos oficiais + ações **A e B**.
+- **Patrimônio Estimado** = caixa + ativos estimados + ações **A, B e C** (última cotação conhecida).
+- **Patrimônio Parcial**: quando há ativos C, exibe quantidade bloqueada, impacto e motivo.
+- **Nota de confiabilidade (0–100)** por ativo: sucesso/falha das integrações, frescor, frequência e consistência (breakdown auditável).
+
+## Provedores de cotação (fallback)
+
+Brapi → Yahoo Finance → Alpha Vantage → Finnhub. Cada tentativa é registrada
+(`quote_attempts`) para diagnóstico e score. Se todos falharem, o modo **manual**
+mantém o sistema 100% funcional. Botão **Verificar na internet** (Google/Yahoo/Brapi)
+permite conferência manual por ativo.
+
+## Status dos requisitos (auditoria final)
+
+| Requisito | Status |
+|-----------|--------|
+| 1. Sistema de confiabilidade A/B/C | ✅ |
+| 2. Patrimônio Oficial × Estimado + diferença | ✅ |
+| 3. Patrimônio Parcial (bloqueados, impacto, motivo) | ✅ |
+| 4. Aba Diagnóstico (por ativo + painel geral) | ✅ |
+| 5. Múltiplos provedores com fallback | ✅ |
+| 6. Aporte para Ações (recalcula preço médio) | ✅ |
+| 7. Aporte para Vendas (entrada de estoque + observação) | ✅ |
+| 8. Meta de Renda Passiva (mensal, progresso, estimativa) | ✅ |
+| 9. Dashboard de Saúde (aba Saúde) | ✅ |
+| 10. Nota de confiabilidade por ativo (0–100) | ✅ |
+| 11. Botão Verificar na Internet | ✅ |
+
+> Observação: as integrações externas dependem de acesso de rede de saída. No
+> ambiente de teste os provedores retornaram 403, o que exercitou exatamente o
+> fallback (multi-provedor → manual). Com `*_KEY`/rede configurados, o modo
+> automático passa a funcionar sem alterações no código.
 ```

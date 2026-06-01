@@ -1,71 +1,56 @@
-import { config } from "../config.js";
+import { query } from "../db/pool.js";
 import { audit } from "../lib/audit.js";
+import { fetchWithFallback, type ProviderAttempt } from "./providers.js";
 
 export interface FetchedQuote {
   ticker: string;
   price: string; // canonical decimal string
+  provider: string; // provider that supplied the price
 }
 
 export class QuoteProviderError extends Error {
-  constructor(message: string, public cause?: unknown) {
+  constructor(message: string, public attempts: ProviderAttempt[] = []) {
     super(message);
     this.name = "QuoteProviderError";
   }
 }
 
+/** Persist every real provider attempt so diagnostics and scores are auditable.
+ *  Skipped providers (missing API key) are not recorded — they never ran. */
+async function recordAttempts(ticker: string, attempts: ProviderAttempt[]): Promise<void> {
+  for (const a of attempts) {
+    if (a.error?.startsWith("Ignorado")) continue;
+    await query(
+      `INSERT INTO quote_attempts (ticker, provider, url, ok, http_status, response_ms, price, error, raw_excerpt)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [ticker, a.provider, a.url, a.ok, a.httpStatus, a.responseMs, a.price, a.error, a.rawExcerpt]
+    );
+    await audit({
+      category: a.ok ? "integration" : "error",
+      entity: "quote",
+      entityId: ticker,
+      action: a.ok ? "fetch_provider_success" : "fetch_provider_failed",
+      details: { provider: a.provider, url: a.url, httpStatus: a.httpStatus, responseMs: a.responseMs, error: a.error, price: a.price },
+    });
+  }
+}
+
 /**
- * Fetch a quote from the external provider (AUTO mode).
+ * AUTO mode with multi-provider fallback (Brapi → Yahoo → Alpha Vantage → Finnhub).
  *
- * Designed to fail gracefully: any network/timeout/parse error throws a
- * QuoteProviderError which callers catch to fall back to MANUAL entry. The
- * system never depends on this succeeding.
+ * Tries each provider in order; records all attempts. On total failure throws a
+ * QuoteProviderError so callers fall back to MANUAL entry. Never fabricates a price.
  */
 export async function fetchQuoteAuto(ticker: string): Promise<FetchedQuote> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), config.quote.timeoutMs);
-  const url = `${config.quote.url}/${encodeURIComponent(ticker)}${
-    config.quote.token ? `?token=${encodeURIComponent(config.quote.token)}` : ""
-  }`;
+  const result = await fetchWithFallback(ticker);
+  await recordAttempts(ticker, result.attempts);
 
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { Accept: "application/json" },
-    });
-    if (!res.ok) {
-      throw new QuoteProviderError(`Provedor respondeu HTTP ${res.status}`);
-    }
-    const json: any = await res.json();
-    // brapi.dev shape: { results: [{ symbol, regularMarketPrice }] }
-    const result = json?.results?.[0];
-    const price = result?.regularMarketPrice ?? json?.price ?? json?.regularMarketPrice;
-    if (price == null || Number.isNaN(Number(price))) {
-      throw new QuoteProviderError("Resposta do provedor sem preço válido");
-    }
-    await audit({
-      category: "integration",
-      entity: "quote",
-      entityId: ticker,
-      action: "fetch_auto_success",
-      details: { url, price },
-    });
-    return { ticker, price: String(price) };
-  } catch (err) {
-    const message =
-      err instanceof QuoteProviderError
-        ? err.message
-        : (err as Error)?.name === "AbortError"
-        ? `Timeout após ${config.quote.timeoutMs}ms`
-        : `Falha de rede: ${(err as Error)?.message ?? "desconhecida"}`;
-    await audit({
-      category: "error",
-      entity: "quote",
-      entityId: ticker,
-      action: "fetch_auto_failed",
-      details: { url, message },
-    });
-    throw new QuoteProviderError(message, err);
-  } finally {
-    clearTimeout(timer);
+  if (!result.success || result.price == null || result.provider == null) {
+    const reasons = result.attempts.map((a) => `${a.provider}: ${a.error ?? "?"}`).join(" | ");
+    throw new QuoteProviderError(
+      `Nenhum provedor retornou cotação válida (${reasons})`,
+      result.attempts
+    );
   }
+  return { ticker, price: result.price, provider: result.provider };
 }

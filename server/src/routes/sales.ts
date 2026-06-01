@@ -48,13 +48,14 @@ salesRouter.post(
     if (qty.cmp(0) <= 0) throw new AppError(400, "qty deve ser > 0");
     if (unitCost.isNegative()) throw new AppError(400, "unitCost inválido");
     const date = optString(body, "date") || new Date().toISOString().slice(0, 10);
+    const note = optString(body, "note"); // observação do aporte
 
     const result = await withTransaction(async (client) => {
       const prod = await client.query(`SELECT * FROM products WHERE id=$1 FOR UPDATE`, [productId]);
       if (prod.rows.length === 0) throw new AppError(404, "Produto não encontrado");
       const purchase = await client.query(
-        `INSERT INTO purchases (product_id, qty, unit_cost, date) VALUES ($1,$2,$3,$4) RETURNING *`,
-        [productId, qty.toFixed(3), unitCost.toFixed(2), date]
+        `INSERT INTO purchases (product_id, qty, unit_cost, date, note) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+        [productId, qty.toFixed(3), unitCost.toFixed(2), date, note]
       );
       const newStock = Decimal.from(prod.rows[0].stock_qty).add(qty);
       const updated = await client.query(

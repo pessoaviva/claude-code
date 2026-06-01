@@ -56,9 +56,44 @@ CREATE TABLE IF NOT EXISTS quotes (
   ticker     TEXT NOT NULL,
   price      NUMERIC(24,8) NOT NULL CHECK (price >= 0),
   source     TEXT NOT NULL CHECK (source IN ('auto','manual')),
+  provider   TEXT,                       -- which provider supplied an auto quote
   fetched_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_quotes_ticker_time ON quotes (ticker, fetched_at DESC);
+-- Backfill for databases created before the `provider` column existed.
+ALTER TABLE quotes ADD COLUMN IF NOT EXISTS provider TEXT;
+
+-- Append-only log of every provider fetch attempt (success or failure).
+-- Powers the per-asset Diagnóstico tab and the reliability score.
+CREATE TABLE IF NOT EXISTS quote_attempts (
+  id          BIGSERIAL PRIMARY KEY,
+  ticker      TEXT NOT NULL,
+  provider    TEXT NOT NULL,
+  url         TEXT NOT NULL,
+  ok          BOOLEAN NOT NULL,
+  http_status INT,
+  response_ms INT,
+  price       NUMERIC(24,8),
+  error       TEXT,
+  raw_excerpt TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_quote_attempts_ticker ON quote_attempts (ticker, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_quote_attempts_provider ON quote_attempts (provider, created_at DESC);
+
+-- Aportes (contributions) to stock positions. Each aporte recomputes the
+-- weighted average price of the matching position in `stocks`.
+CREATE TABLE IF NOT EXISTS stock_contributions (
+  id         BIGSERIAL PRIMARY KEY,
+  ticker     TEXT NOT NULL,
+  company    TEXT NOT NULL DEFAULT '',
+  quantity   NUMERIC(24,8) NOT NULL CHECK (quantity > 0),
+  unit_price NUMERIC(24,8) NOT NULL CHECK (unit_price >= 0),
+  date       DATE NOT NULL DEFAULT CURRENT_DATE,
+  note       TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_stock_contributions_ticker ON stock_contributions (ticker);
 
 -- Patrimônio (net worth) assets. official = confirmed value, estimated = mark-to-market.
 CREATE TABLE IF NOT EXISTS assets (
@@ -88,8 +123,11 @@ CREATE TABLE IF NOT EXISTS purchases (
   qty        NUMERIC(24,3) NOT NULL CHECK (qty > 0),
   unit_cost  NUMERIC(20,2) NOT NULL CHECK (unit_cost >= 0),
   date       DATE NOT NULL DEFAULT CURRENT_DATE,
+  note       TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Backfill for databases created before the `note` column existed.
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS note TEXT NOT NULL DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS sales (
   id           BIGSERIAL PRIMARY KEY,

@@ -1,10 +1,21 @@
 import { useState } from "react";
 import { api } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
-import { brl, dateBR } from "../lib/format";
+import { brl, dateBR, pct } from "../lib/format";
 import { Banner, Button, Card, Input, Select } from "../components/ui";
 
-interface Goal { id: string; type: string; name: string; target: string; current: string; deadline: string | null; progressPct: string }
+interface Passive {
+  monthlyTarget: string;
+  currentMonthly: string;
+  progressPct: string;
+  monthlyGrowth: string;
+  estimateMonths: number | null;
+  estimateDate: string | null;
+}
+interface Goal {
+  id: string; type: string; name: string; target: string; current: string;
+  deadline: string | null; progressPct: string; passive?: Passive;
+}
 
 const TYPES = [
   { value: "patrimonio", label: "Patrimônio" },
@@ -59,7 +70,8 @@ export function Goals() {
       {error && <Banner kind="error">{error}</Banner>}
       <div className="grid gap-4 md:grid-cols-2">
         {(data ?? []).map((g) => {
-          const progress = Math.min(100, Number(g.progressPct));
+          const isPassive = g.type === "renda_passiva" && g.passive;
+          const progress = Math.min(100, Number(isPassive ? g.passive!.progressPct : g.progressPct));
           return (
             <Card key={g.id}>
               <div className="flex items-start justify-between">
@@ -70,12 +82,25 @@ export function Goals() {
                 <button onClick={() => remove(g.id)} className="text-xs text-rose-400 hover:underline">excluir</button>
               </div>
               <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-slate-800">
-                <div className="h-full bg-indigo-500" style={{ width: `${progress}%` }} />
+                <div className={`h-full ${isPassive ? "bg-emerald-500" : "bg-indigo-500"}`} style={{ width: `${progress}%` }} />
               </div>
-              <div className="mt-2 flex justify-between text-sm">
-                <span className="text-slate-400">{brl(g.current)} / {brl(g.target)}</span>
-                <span className="font-medium">{g.progressPct}%</span>
-              </div>
+              {isPassive ? (
+                <div className="mt-2 space-y-1 text-sm">
+                  <div className="flex justify-between"><span className="text-slate-400">Renda mensal atual</span><span className="font-medium">{brl(g.passive!.currentMonthly)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Meta mensal</span><span>{brl(g.passive!.monthlyTarget)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Progresso</span><span className="font-medium">{pct(g.passive!.progressPct)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Crescimento médio/mês</span><span>{brl(g.passive!.monthlyGrowth)}</span></div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Estimativa de conclusão</span>
+                    <span>{g.passive!.estimateMonths === 0 ? "Atingida ✅" : g.passive!.estimateMonths != null ? `${g.passive!.estimateMonths} meses (${dateBR(g.passive!.estimateDate)})` : "sem tendência"}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-2 flex justify-between text-sm">
+                  <span className="text-slate-400">{brl(g.current)} / {brl(g.target)}</span>
+                  <span className="font-medium">{g.progressPct}%</span>
+                </div>
+              )}
               {g.deadline && <div className="mt-1 text-xs text-slate-500">Prazo: {dateBR(g.deadline)}</div>}
               <div className="mt-3 flex gap-2">
                 <Input type="number" step="0.01" placeholder="Atualizar valor atual" id={`g-${g.id}`} />

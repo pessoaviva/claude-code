@@ -11,7 +11,7 @@ export function Sales() {
   const products = useFetch<Product[]>(() => api.get("/sales/products"));
   const profit = useFetch<Profit[]>(() => api.get("/sales/profit"));
   const [prodForm, setProdForm] = useState({ sku: "", name: "" });
-  const [buyForm, setBuyForm] = useState({ productId: "", qty: "", unitCost: "" });
+  const [buyForm, setBuyForm] = useState({ productId: "", qty: "", unitCost: "", note: "" });
   const [sellForm, setSellForm] = useState({ productId: "", qty: "", unitPrice: "" });
   const [msg, setMsg] = useState<{ kind: "error" | "success"; text: string } | null>(null);
 
@@ -41,14 +41,15 @@ export function Sales() {
           </form>
         </Card>
 
-        <Card title="Compra (entrada de estoque)">
-          <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); run(async () => { await api.post("/sales/purchases", { ...buyForm, productId: Number(buyForm.productId) }); setBuyForm({ productId: "", qty: "", unitCost: "" }); }, "Compra registrada."); }}>
+        <Card title="Aporte / Compra (entrada de estoque)">
+          <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); run(async () => { await api.post("/sales/purchases", { ...buyForm, productId: Number(buyForm.productId) }); setBuyForm({ productId: "", qty: "", unitCost: "", note: "" }); }, "Aporte de estoque registrado."); }}>
             <Select value={buyForm.productId} onChange={(e) => setBuyForm({ ...buyForm, productId: e.target.value })} required>
               <option value="">Selecione…</option>{opts}
             </Select>
-            <Input type="number" step="0.001" placeholder="Qtd" value={buyForm.qty} onChange={(e) => setBuyForm({ ...buyForm, qty: e.target.value })} required />
-            <Input type="number" step="0.01" placeholder="Custo unitário" value={buyForm.unitCost} onChange={(e) => setBuyForm({ ...buyForm, unitCost: e.target.value })} required />
-            <Button type="submit" className="w-full">Registrar compra</Button>
+            <Input type="number" step="0.001" placeholder="Quantidade" value={buyForm.qty} onChange={(e) => setBuyForm({ ...buyForm, qty: e.target.value })} required />
+            <Input type="number" step="0.01" placeholder="Valor (custo unitário)" value={buyForm.unitCost} onChange={(e) => setBuyForm({ ...buyForm, unitCost: e.target.value })} required />
+            <Input placeholder="Observação" value={buyForm.note} onChange={(e) => setBuyForm({ ...buyForm, note: e.target.value })} />
+            <Button type="submit" className="w-full">Registrar aporte</Button>
           </form>
         </Card>
 

@@ -78,6 +78,25 @@ export function BarChart({ data, height = 160 }: { data: { label: string; value:
   );
 }
 
+export function ReliabilityBadge({ level, label }: { level: "A" | "B" | "C"; label?: string }) {
+  const styles = {
+    A: "bg-emerald-900 text-emerald-200 border-emerald-700",
+    B: "bg-amber-900 text-amber-200 border-amber-700",
+    C: "bg-rose-900 text-rose-200 border-rose-700",
+  }[level];
+  return (
+    <span className={`inline-block rounded border px-2 py-0.5 text-xs font-semibold ${styles}`} title={label}>
+      {level}{label ? ` · ${label}` : ""}
+    </span>
+  );
+}
+
+/** 0-100 reliability score with color thresholds. */
+export function ScorePill({ score }: { score: number }) {
+  const color = score >= 80 ? "text-emerald-400" : score >= 50 ? "text-amber-400" : "text-rose-400";
+  return <span className={`font-mono font-semibold ${color}`}>{score}</span>;
+}
+
 export function Table({ headers, children }: { headers: string[]; children: React.ReactNode }) {
   return (
     <div className="overflow-x-auto">
