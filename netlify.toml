@@ -1,0 +1,29 @@
+# Netlify deployment for FinTrack Pro
+# Frontend: static React build (web/dist). Backend: Express wrapped as a
+# serverless function (netlify/functions/api.ts).
+
+[build]
+  command = "npm run build"
+  publish = "web/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  # Keep native/CJS-heavy deps as runtime requires instead of inlining them.
+  external_node_modules = ["pg", "express", "serverless-http"]
+
+# API → serverless function. `force` so it wins over the SPA fallback below.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+# SPA fallback: every other route serves the React app.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

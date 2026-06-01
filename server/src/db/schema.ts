@@ -1,7 +1,10 @@
--- FinTrack Pro — schema
--- Monetary precision: NUMERIC(20,2) for currency, NUMERIC(24,8) for quantities/prices.
--- All money math in the application uses fixed-point BigInt (see lib/decimal.ts).
-
+/**
+ * Canonical database schema as a string so it can be (a) applied by the CLI
+ * migration and (b) bundled into the serverless function for lazy bootstrap
+ * on first cold start. Every statement is idempotent (IF NOT EXISTS), so it is
+ * safe to run repeatedly.
+ */
+export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS audit_log (
   id          BIGSERIAL PRIMARY KEY,
   ts          TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -50,21 +53,17 @@ CREATE TABLE IF NOT EXISTS stocks (
 );
 CREATE INDEX IF NOT EXISTS idx_stocks_ticker ON stocks (ticker);
 
--- Latest known quote per ticker, plus full history via append-only rows.
 CREATE TABLE IF NOT EXISTS quotes (
   id         BIGSERIAL PRIMARY KEY,
   ticker     TEXT NOT NULL,
   price      NUMERIC(24,8) NOT NULL CHECK (price >= 0),
   source     TEXT NOT NULL CHECK (source IN ('auto','manual')),
-  provider   TEXT,                       -- which provider supplied an auto quote
+  provider   TEXT,
   fetched_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_quotes_ticker_time ON quotes (ticker, fetched_at DESC);
--- Backfill for databases created before the `provider` column existed.
 ALTER TABLE quotes ADD COLUMN IF NOT EXISTS provider TEXT;
 
--- Append-only log of every provider fetch attempt (success or failure).
--- Powers the per-asset Diagnóstico tab and the reliability score.
 CREATE TABLE IF NOT EXISTS quote_attempts (
   id          BIGSERIAL PRIMARY KEY,
   ticker      TEXT NOT NULL,
@@ -81,8 +80,6 @@ CREATE TABLE IF NOT EXISTS quote_attempts (
 CREATE INDEX IF NOT EXISTS idx_quote_attempts_ticker ON quote_attempts (ticker, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_quote_attempts_provider ON quote_attempts (provider, created_at DESC);
 
--- Aportes (contributions) to stock positions. Each aporte recomputes the
--- weighted average price of the matching position in `stocks`.
 CREATE TABLE IF NOT EXISTS stock_contributions (
   id         BIGSERIAL PRIMARY KEY,
   ticker     TEXT NOT NULL,
@@ -95,7 +92,6 @@ CREATE TABLE IF NOT EXISTS stock_contributions (
 );
 CREATE INDEX IF NOT EXISTS idx_stock_contributions_ticker ON stock_contributions (ticker);
 
--- Patrimônio (net worth) assets. official = confirmed value, estimated = mark-to-market.
 CREATE TABLE IF NOT EXISTS assets (
   id              BIGSERIAL PRIMARY KEY,
   name            TEXT NOT NULL,
@@ -107,7 +103,6 @@ CREATE TABLE IF NOT EXISTS assets (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Inventory / Vendas
 CREATE TABLE IF NOT EXISTS products (
   id         BIGSERIAL PRIMARY KEY,
   sku        TEXT NOT NULL UNIQUE,
@@ -126,7 +121,6 @@ CREATE TABLE IF NOT EXISTS purchases (
   note       TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
--- Backfill for databases created before the `note` column existed.
 ALTER TABLE purchases ADD COLUMN IF NOT EXISTS note TEXT NOT NULL DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS sales (
@@ -134,7 +128,7 @@ CREATE TABLE IF NOT EXISTS sales (
   product_id   BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   qty          NUMERIC(24,3) NOT NULL CHECK (qty > 0),
   unit_price   NUMERIC(20,2) NOT NULL CHECK (unit_price >= 0),
-  unit_cost    NUMERIC(20,2) NOT NULL DEFAULT 0,  -- COGS snapshot at sale time
+  unit_cost    NUMERIC(20,2) NOT NULL DEFAULT 0,
   date         DATE NOT NULL DEFAULT CURRENT_DATE,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -150,3 +144,4 @@ CREATE TABLE IF NOT EXISTS goals (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+`;

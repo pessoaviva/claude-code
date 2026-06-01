@@ -97,6 +97,42 @@ npm run dev                              # API :4000  |  Web :5173
 
 Front-end em `http://localhost:5173` (proxy `/api` → `:4000`).
 
+## Deploy no Netlify
+
+Netlify **não** roda um servidor Express persistente nem fornece banco de dados.
+Por isso o backend é empacotado como **Netlify Function** (mesma app Express via
+`serverless-http`) e o Postgres é externo (gerenciado, com SSL).
+
+Arquitetura em produção:
+
+```
+Browser ── /api/* ──▶ Netlify redirect ──▶ /.netlify/functions/api ──▶ Express (serverless)
+   │                                                                         │
+   └── arquivos estáticos (web/dist, React)                                  └── Postgres gerenciado (Neon/Supabase, SSL)
+```
+
+Passos:
+
+1. **Banco**: crie um Postgres gerenciado (ex.: [Neon](https://neon.tech) free).
+   Use a connection string *pooled* com `sslmode=require`.
+2. No Netlify, conecte o repositório. O `netlify.toml` já define:
+   - `command = "npm run build"` · `publish = "web/dist"`
+   - função em `netlify/functions/api.ts` (bundler esbuild)
+   - redirects `/api/*` → função e fallback SPA `/*` → `index.html`
+3. **Variáveis de ambiente** (Site settings → Environment):
+   - `DATABASE_URL=postgresql://user:pass@ep-xxx-pooler.neon.tech/fintrack?sslmode=require`
+   - (opcional) chaves de cotação: `BRAPI_TOKEN`, `ALPHAVANTAGE_KEY`, `FINNHUB_KEY`
+4. Deploy. O schema é criado automaticamente no primeiro acesso (idempotente);
+   não há passo de `migrate` separado em serverless.
+
+Pontos que evitam o "erro no servidor":
+- **SSL automático** para hosts remotos (`pool.ts`) — Neon/Supabase exigem SSL.
+- **Sem `app.listen`** no caminho serverless; a função reaproveita o pool entre invocações.
+- **Falha de DB nunca é mascarada**: retorna `500` com mensagem clara em vez de cair.
+
+> Local dev continua igual: `npm run dev` sobe a API em `:4000` (sem SSL para
+> `localhost`) e o front em `:5173`.
+
 ## Testes
 
 ```bash
