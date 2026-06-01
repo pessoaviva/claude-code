@@ -5,12 +5,20 @@ dotenv.config();
  * Quote providers are tried in the order listed (fallback architecture).
  * Providers without a required API key are automatically skipped.
  */
+// Accept the DB URL from any of the common auto-injected env vars so one-click
+// platforms work with zero manual config:
+//   - DATABASE_URL            (Render Blueprint, manual, generic)
+//   - NETLIFY_DATABASE_URL    (Netlify DB / Neon integration, auto-injected)
+const injectedDbUrl =
+  process.env.DATABASE_URL ||
+  process.env.NETLIFY_DATABASE_URL ||
+  process.env.NETLIFY_DATABASE_URL_UNPOOLED ||
+  "";
+
 export const config = {
-  databaseUrl:
-    process.env.DATABASE_URL ??
-    "postgresql://fintrack:fintrack@localhost:5432/fintrack",
-  // True only when DATABASE_URL was explicitly provided (not the localhost default).
-  databaseUrlConfigured: Boolean(process.env.DATABASE_URL),
+  databaseUrl: injectedDbUrl || "postgresql://fintrack:fintrack@localhost:5432/fintrack",
+  // True only when a real URL was provided (not the localhost fallback).
+  databaseUrlConfigured: Boolean(injectedDbUrl),
   port: Number(process.env.PORT ?? 4000),
   quote: {
     // Legacy single-URL knobs (kept for backward compatibility).

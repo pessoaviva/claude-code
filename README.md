@@ -97,15 +97,27 @@ npm run dev                              # API :4000  |  Web :5173
 
 Front-end em `http://localhost:5173` (proxy `/api` → `:4000`).
 
-## Deploy no Netlify
+## Deploy
 
-### Caminho rápido (botão)
+### Opção 1 — Render (1 clique, **já inclui o banco**) ✅ recomendado
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/pessoaviva/claude-code)
+
+O arquivo `render.yaml` cria **o servidor + um Postgres** juntos e conecta os
+dois automaticamente (`DATABASE_URL`). Você clica em *Apply* e pronto — não
+precisa criar banco em outro lugar nem copiar connection string. Um único
+serviço serve a API e o front-end React.
+
+> Troque a URL do botão pelo seu repositório, se for outro.
+
+### Opção 2 — Netlify (frontend estático + função serverless)
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/pessoaviva/claude-code)
 
-> Troque a URL do botão pelo seu repositório, se for outro. O assistente já
-> pergunta a `DATABASE_URL` (e as chaves opcionais) durante o deploy — basta
-> colar a connection string do seu Postgres gerenciado.
+Netlify não tem banco embutido. Após o deploy, abra **Project → Add database →
+Neon** (Netlify DB) — a variável `NETLIFY_DATABASE_URL` é injetada
+automaticamente e o app passa a funcionar (a app já lê essa variável). Como
+alternativa, defina `DATABASE_URL` manualmente com um Postgres gerenciado.
 
 Netlify **não** roda um servidor Express persistente nem fornece banco de dados.
 Por isso o backend é empacotado como **Netlify Function** (mesma app Express via

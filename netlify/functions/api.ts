@@ -44,9 +44,10 @@ export const handler = async (event: unknown, context: unknown) => {
   // explicitly and tell the user exactly what to do.
   if (!config.databaseUrlConfigured) {
     return jsonError(
-      "DATABASE_URL não configurada. Crie um Postgres gerenciado (ex.: Neon, " +
-        "https://neon.tech) e adicione a connection string em Netlify → Site " +
-        "settings → Environment variables como DATABASE_URL, depois refaça o deploy."
+      "Banco de dados não configurado. Na Netlify, abra Project → Add database → " +
+        "Neon (a variável NETLIFY_DATABASE_URL é injetada automaticamente), ou " +
+        "defina DATABASE_URL nas Environment variables. Depois refaça o deploy. " +
+        "Dica: o deploy no Render (render.yaml) já cria o banco junto, em 1 clique."
     );
   }
 

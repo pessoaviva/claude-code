@@ -7,18 +7,21 @@ import { SCHEMA_SQL } from "./schema.js";
 pg.types.setTypeParser(1700, (val) => val); // NUMERIC/DECIMAL -> string
 
 /**
- * Decide whether to use SSL. Managed/serverless Postgres (Neon, Supabase, etc.)
- * REQUIRE SSL — connecting without it throws and looks like a generic "server
- * error" in production (e.g. on Netlify). Local development does not use SSL.
+ * Decide whether to use SSL — must be correct across very different platforms:
+ *   - Neon / Supabase / Netlify DB: REQUIRE SSL (their URLs carry sslmode=require).
+ *   - Render internal Postgres:     must NOT use SSL on the private network.
+ *   - Local dev (localhost):        no SSL.
  *
- *   - PGSSL=true|false  -> explicit override
- *   - sslmode=require in the URL, or a non-local host -> SSL on
+ * So: explicit PGSSL wins; otherwise enable SSL only when the URL asks for it
+ * (sslmode=require) or the host is a known SSL-only provider. This avoids
+ * forcing SSL on providers that reject it.
  */
 function resolveSsl(): pg.PoolConfig["ssl"] {
   const url = config.databaseUrl;
-  const isLocal = /@(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)([:/?]|$)/.test(url);
   if (process.env.PGSSL === "false") return undefined;
-  if (process.env.PGSSL === "true" || /sslmode=require/i.test(url) || !isLocal) {
+  if (process.env.PGSSL === "true") return { rejectUnauthorized: false };
+  const sslHost = /neon\.tech|supabase\.|amazonaws\.com|azure|cockroachlabs|render\.com/i.test(url);
+  if (/sslmode=require/i.test(url) || sslHost) {
     // Managed providers present chained certs; allow them without a local CA bundle.
     return { rejectUnauthorized: false };
   }
