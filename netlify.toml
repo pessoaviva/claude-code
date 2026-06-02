@@ -1,37 +1,15 @@
-# Netlify deployment for FinTrack Pro
-# Frontend: static React build (web/dist). Backend: Express wrapped as a
-# serverless function (netlify/functions/api.ts).
+# Netlify — FinTrack Pro é um app 100% no navegador (sem backend, sem banco).
+# Deploy estático: basta publicar o build do React. Sem variáveis de ambiente.
 
 [build]
-  command = "npm run build"
+  command = "npm install && npm run build --workspace=web"
   publish = "web/dist"
 
 [build.environment]
   NODE_VERSION = "20"
 
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
-  # Keep native/CJS-heavy deps as runtime requires instead of inlining them.
-  external_node_modules = ["pg", "express", "serverless-http"]
-
-# API → serverless function. `force` so it wins over the SPA fallback below.
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-  force = true
-
-# SPA fallback: every other route serves the React app.
+# SPA fallback: toda rota serve o app React.
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-# Variáveis solicitadas no assistente do botão "Deploy to Netlify".
-# O texto à direita é a descrição mostrada ao usuário durante o deploy.
-[template.environment]
-  DATABASE_URL = "Connection string de um Postgres gerenciado com SSL (ex.: Neon, pooled, com ?sslmode=require)"
-  BRAPI_TOKEN = "Opcional — token do brapi.dev para cotações automáticas"
-  ALPHAVANTAGE_KEY = "Opcional — chave da Alpha Vantage (fallback de cotações)"
-  FINNHUB_KEY = "Opcional — chave do Finnhub (fallback de cotações)"

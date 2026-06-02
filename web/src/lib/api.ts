@@ -1,31 +1,14 @@
-const BASE = "/api";
-
-export interface ApiError {
-  ok: false;
-  error: string;
-  details?: unknown;
-}
-
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
-  const json = await res.json().catch(() => ({ ok: false, error: "Resposta inválida do servidor" }));
-  if (!res.ok || json.ok === false) {
-    const err = new Error(json.error ?? `HTTP ${res.status}`) as Error & { details?: unknown; status?: number };
-    err.details = json.details;
-    err.status = res.status;
-    throw err;
-  }
-  return json.data as T;
-}
+/**
+ * API client. The app is browser-only: instead of HTTP calls to a backend,
+ * requests are served by the in-browser store (localStorage). The method
+ * surface (get/post/patch/del) and error semantics are unchanged, so pages
+ * don't need to know there is no server.
+ */
+import { handle } from "./localApi";
 
 export const api = {
-  get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
-  patch: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
-  del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  get: <T>(path: string) => handle("GET", path) as Promise<T>,
+  post: <T>(path: string, body?: unknown) => handle("POST", path, body) as Promise<T>,
+  patch: <T>(path: string, body?: unknown) => handle("PATCH", path, body) as Promise<T>,
+  del: <T>(path: string) => handle("DELETE", path) as Promise<T>,
 };

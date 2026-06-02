@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { resetAll } from "./lib/store";
 import { Dashboard } from "./pages/Dashboard";
 import { Transactions, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from "./pages/Transactions";
 import { Stocks } from "./pages/Stocks";
@@ -55,6 +56,21 @@ export function App() {
         {tab === "goals" && <Goals />}
         {tab === "audit" && <Audit />}
       </main>
+
+      <footer className="mx-auto max-w-7xl px-4 py-8 text-xs text-slate-500">
+        Dados salvos somente neste navegador (localStorage) — nada é enviado a servidores.{" "}
+        <button
+          onClick={() => {
+            if (confirm("Apagar TODOS os dados deste navegador? Esta ação não pode ser desfeita.")) {
+              resetAll();
+              location.reload();
+            }
+          }}
+          className="text-rose-400 hover:underline"
+        >
+          Limpar todos os dados
+        </button>
+      </footer>
     </div>
   );
 }

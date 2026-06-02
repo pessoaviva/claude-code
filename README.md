@@ -2,7 +2,39 @@
 
 Sistema financeiro completo para gerenciar **ganhos, gastos, patrimônio, ações,
 vendas/estoque, metas e relatórios** — com foco em **precisão financeira
-auditável** e funcionamento **mesmo sem APIs externas** (cotações manuais).
+auditável**.
+
+## Como funciona — app 100% no navegador (sem banco)
+
+O FinTrack Pro roda inteiro no **navegador**: todos os dados ficam no
+`localStorage` (nada é enviado a servidores) e toda a lógica financeira
+(precisão decimal, carteira, A/B/C, score, COGS, metas, auditoria) executa no
+front-end. Resultado: **site estático**, deploy de 1 clique, **sem banco de
+dados e sem variáveis de ambiente**.
+
+- ✅ Todas as funções funcionam offline. Cotações são **manuais** (a busca
+  automática por APIs externas não está disponível no modo navegador).
+- ⚠️ Os dados ficam **somente neste navegador/dispositivo** (sem sincronização).
+  Limpar os dados do navegador apaga tudo. Há um botão "Limpar todos os dados".
+
+> **Modo servidor (opcional, legado):** a pasta `server/` traz a mesma lógica
+> como API Node + Express + PostgreSQL, caso você queira persistência
+> centralizada/multi-dispositivo. Não é necessária para usar o app.
+
+### Rodar local
+
+```bash
+npm install
+npm run dev          # Vite em http://localhost:5173
+```
+
+### Deploy (Netlify, estático, 1 clique)
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/pessoaviva/claude-code)
+
+`netlify.toml` já define build (`web/dist`) e fallback SPA. **Não precisa
+configurar banco nem variáveis.** Serve em qualquer host estático (Netlify,
+Vercel, GitHub Pages, etc.).
 
 ## Princípios de projeto
 
@@ -28,7 +60,7 @@ fintrack-pro/                 (monorepo npm workspaces)
 │       ├── app.ts            Montagem do Express e rotas
 │       ├── index.ts          Bootstrap do servidor
 │       ├── db/
-│       │   ├── schema.sql     Schema do banco
+│       │   ├── schema.ts      Schema do banco (string SQL)
 │       │   ├── pool.ts        Pool pg (NUMERIC -> string)
 │       │   ├── migrate.ts     Aplica o schema
 │       │   └── seed.ts        Dados de exemplo (opcional)
@@ -79,79 +111,23 @@ completo); a cotação vigente é o registro mais recente por ticker.
 | Patrimônio oficial | caixa + ativos oficiais + ações ao custo |
 | Patrimônio estimado | caixa + ativos estimados + ações a mercado |
 
-## Como executar
+## Modo servidor (opcional, legado)
+
+A pasta `server/` mantém a mesma lógica como API Node + Express + PostgreSQL,
+para quem quer persistência centralizada/multi-dispositivo. **Não é necessária**
+para o app, que por padrão usa o `localStorage` (modo navegador).
 
 ```bash
-# 1. Banco (Docker) — ou use um Postgres local
 docker compose up -d db
-
-# 2. Configurar e migrar
-cp server/.env.example server/.env      # ajuste DATABASE_URL se necessário
+cp server/.env.example server/.env
 npm install
-npm run migrate                          # aplica o schema
-npm run seed --workspace=server          # (opcional) dados de exemplo
-
-# 3. Rodar API + Web
-npm run dev                              # API :4000  |  Web :5173
+npm run migrate --workspace=server       # aplica o schema
+npm run seed --workspace=server           # (opcional) dados de exemplo
+npm run dev --workspace=server            # API em :4000
 ```
 
-Front-end em `http://localhost:5173` (proxy `/api` → `:4000`).
-
-## Deploy
-
-### Opção 1 — Render (1 clique, **já inclui o banco**) ✅ recomendado
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/pessoaviva/claude-code)
-
-O arquivo `render.yaml` cria **o servidor + um Postgres** juntos e conecta os
-dois automaticamente (`DATABASE_URL`). Você clica em *Apply* e pronto — não
-precisa criar banco em outro lugar nem copiar connection string. Um único
-serviço serve a API e o front-end React.
-
-> Troque a URL do botão pelo seu repositório, se for outro.
-
-### Opção 2 — Netlify (frontend estático + função serverless)
-
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/pessoaviva/claude-code)
-
-Netlify não tem banco embutido. Após o deploy, abra **Project → Add database →
-Neon** (Netlify DB) — a variável `NETLIFY_DATABASE_URL` é injetada
-automaticamente e o app passa a funcionar (a app já lê essa variável). Como
-alternativa, defina `DATABASE_URL` manualmente com um Postgres gerenciado.
-
-Netlify **não** roda um servidor Express persistente nem fornece banco de dados.
-Por isso o backend é empacotado como **Netlify Function** (mesma app Express via
-`serverless-http`) e o Postgres é externo (gerenciado, com SSL).
-
-Arquitetura em produção:
-
-```
-Browser ── /api/* ──▶ Netlify redirect ──▶ /.netlify/functions/api ──▶ Express (serverless)
-   │                                                                         │
-   └── arquivos estáticos (web/dist, React)                                  └── Postgres gerenciado (Neon/Supabase, SSL)
-```
-
-Passos:
-
-1. **Banco**: crie um Postgres gerenciado (ex.: [Neon](https://neon.tech) free).
-   Use a connection string *pooled* com `sslmode=require`.
-2. No Netlify, conecte o repositório. O `netlify.toml` já define:
-   - `command = "npm run build"` · `publish = "web/dist"`
-   - função em `netlify/functions/api.ts` (bundler esbuild)
-   - redirects `/api/*` → função e fallback SPA `/*` → `index.html`
-3. **Variáveis de ambiente** (Site settings → Environment):
-   - `DATABASE_URL=postgresql://user:pass@ep-xxx-pooler.neon.tech/fintrack?sslmode=require`
-   - (opcional) chaves de cotação: `BRAPI_TOKEN`, `ALPHAVANTAGE_KEY`, `FINNHUB_KEY`
-4. Deploy. O schema é criado automaticamente no primeiro acesso (idempotente);
-   não há passo de `migrate` separado em serverless.
-
-Pontos que evitam o "erro no servidor":
-- **SSL automático** para hosts remotos (`pool.ts`) — Neon/Supabase exigem SSL.
-- **Sem `app.listen`** no caminho serverless; a função reaproveita o pool entre invocações.
-- **Falha de DB nunca é mascarada**: retorna `500` com mensagem clara em vez de cair.
-
-> Local dev continua igual: `npm run dev` sobe a API em `:4000` (sem SSL para
-> `localhost`) e o front em `:5173`.
+Para usar esse backend, o cliente (`web/src/lib/api.ts`) precisaria voltar a
+fazer chamadas HTTP a `/api` (hoje ele chama o store local do navegador).
 
 ## Testes
 
