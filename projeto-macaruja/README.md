@@ -1,4 +1,4 @@
-# Projeto Macarujá v2.0 — Gestão de Engorda de Precisão
+# Projeto Macarujá v2.1 — Gestão de Engorda de Precisão
 
 App de página única (HTML + JavaScript) para gestão de engorda de gado de corte
 da **Fazenda Macarujá (marca AB)**. Funciona **offline** (localStorage) e,
@@ -34,6 +34,24 @@ dono** (cada usuário só acessa os próprios dados). Pronto para hospedar no
 ### Pesagens
 - Histórico por brinco/EID.
 - **Intervalo em dias** entre pesagens **+ GMD por período** (P1→P2, P2→P3…).
+
+### Vendidos & Baixas (novo na v2.1)
+- Botão **Vendido** abre um formulário com **comprador, CPF/CNPJ, data, peso,
+  preço da @, lote de origem** e observação (GTA/nota). O animal sai do rebanho
+  ativo e vai para a aba **Vendidos & Baixas** com receita e lucro calculados.
+- Botão **Morreu** registra **causa** e **cercado/pasto**; entra na seção
+  **Mortes/Baixas** com o prejuízo estimado (compra + alimentação).
+- Removido o carimbo "VENDIDO" do brinco; vendidos/baixas saem do rebanho ativo.
+- Botão **Reativar** para desfazer uma venda/baixa.
+
+### Design / experiência de app iOS (novo na v2.1)
+- Tipografia San Francisco (`-apple-system`) com números **tabulares** em KPIs,
+  tabelas e métricas; títulos e espaçamentos refinados.
+- **Dock inferior estilo iOS**: 4 abas (Início, Rebanho, Lotes, Saúde) + **Mais**.
+- **Bottom sheets** nativos para venda/baixa (em vez de pop-ups).
+- Campos com fonte 16px (sem zoom automático no iPhone), alvos de toque ≥44px,
+  respeito às **safe areas** (notch/home indicator), feedback de toque.
+- Metatags de **PWA** (Adicionar à Tela de Início abre em tela cheia).
 
 ### Saúde (novo módulo)
 - **Vacina** (Clostridiose, Raiva, Aftosa, Brucelose… + Outra).

@@ -133,17 +133,34 @@ create index if not exists idx_saude_animal on saude(owner_id, animal_id, data_e
 
 -- ---------- VENDAS ----------
 create table if not exists vendas (
-  id           bigint generated always as identity primary key,
-  owner_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
-  animal_id    bigint references animais(id) on delete cascade,
-  data_venda   date,
-  peso_venda   numeric(10,2),
-  arrobas      numeric(10,3),
-  valor_arroba numeric(12,2),
-  comprador    text,
-  valor_total  numeric(14,2),
-  created_at   timestamptz default now()
+  id                  bigint generated always as identity primary key,
+  owner_id            uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  animal_id           bigint references animais(id) on delete cascade,
+  data_venda          date,
+  peso_venda          numeric(10,2),
+  arrobas             numeric(10,3),
+  valor_arroba        numeric(12,2),
+  comprador           text,
+  cpf_comprador       text,                      -- CPF/CNPJ do comprador
+  lote_nome           text,                      -- lote de origem (snapshot)
+  semiconfinamento_id bigint references semiconfinamentos(id) on delete set null,
+  observacao          text,                      -- GTA, nota, transporte...
+  valor_total         numeric(14,2),
+  created_at          timestamptz default now()
 );
+
+-- ---------- BAIXAS / MORTES ----------
+create table if not exists baixas (
+  id          bigint generated always as identity primary key,
+  owner_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  animal_id   bigint references animais(id) on delete cascade,
+  data_morte  date not null,
+  causa       text,                              -- timpanismo, acidente, doença...
+  cercado     text,                              -- cercado/pasto onde ocorreu
+  observacao  text,
+  created_at  timestamptz default now()
+);
+create index if not exists idx_baixas_animal on baixas(owner_id, animal_id, data_morte);
 
 -- ---------- LEITURAS RFID (integração futura com bastão/balança) ----------
 create table if not exists leituras_rfid (
@@ -166,7 +183,7 @@ declare t text;
 begin
   foreach t in array array[
     'dietas','ingredientes','dieta_itens','semiconfinamentos','animais',
-    'pesagens','movimentacoes','custos','saude','vendas','leituras_rfid'
+    'pesagens','movimentacoes','custos','saude','vendas','baixas','leituras_rfid'
   ] loop
     execute format('alter table %I enable row level security;', t);
     -- remove eventuais políticas abertas herdadas de versões antigas
