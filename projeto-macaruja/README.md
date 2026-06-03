@@ -96,16 +96,37 @@ dono** (cada usuário só acessa os próprios dados). Pronto para hospedar no
 3. **Criar conta** → **Entrar**.
 4. *Enviar local → Supabase* para subir os dados (ou *Carregar* para baixar).
 
-## Uso local / iPhone
-- Abra `index.html` direto no navegador (tudo roda offline; dados no aparelho).
-- iPhone: Safari → Compartilhar → **Adicionar à Tela de Início** (vira "app").
+## App instalável (PWA) — funciona offline
+
+O projeto é um **PWA** completo: dá para instalar como app, com ícone próprio e
+funcionamento **offline** (o app shell fica em cache pelo service worker).
+
+- **iPhone/iPad (Safari):** abra o site → Compartilhar → **Adicionar à Tela de
+  Início**. Abre em tela cheia, sem barra do Safari, usando o ícone AB.
+- **Android (Chrome):** menu → **Instalar app** / “Adicionar à tela inicial”.
+- **Desktop (Chrome/Edge):** ícone de instalar na barra de endereço.
+
+Requisito: servir por **HTTPS** (o Vercel já faz). Em `file://` o service worker
+fica desativado (o app continua funcionando, só sem cache offline).
+
+Arquivos do PWA: `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`,
+`icon-512-maskable.png`, `apple-touch-icon-180.png`.
+
+## Telas (capturas)
+
+Em `screenshots/` há capturas reais do app (Chromium): desktop e iPhone, claro
+e escuro, incluindo a aba **Vendidos & Baixas**, o módulo **Saúde**, o **dock
+inferior** e o **bottom sheet** de venda.
 
 ## Arquivos
 | Arquivo | Função |
 |---|---|
 | `index.html` | O app completo (UI + lógica). |
-| `supabase.sql` | Tabelas + RLS por dono + Saúde + RFID. |
+| `supabase.sql` | Tabelas + RLS por dono + Saúde + Baixas + RFID. |
 | `vercel.json` | Cabeçalhos de segurança e hospedagem estática. |
+| `manifest.json` · `sw.js` | PWA instalável + cache offline. |
+| `icon-*.png` · `apple-touch-icon-180.png` | Ícones do app. |
+| `screenshots/` | Capturas de tela (desktop/iPhone, claro/escuro). |
 
 ## Próximos passos sugeridos
 - Integração **RFID** real (bastão/balança) gravando em `leituras_rfid`.
