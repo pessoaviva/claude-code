@@ -109,8 +109,13 @@ funcionamento **offline** (o app shell fica em cache pelo service worker).
 Requisito: servir por **HTTPS** (o Vercel já faz). Em `file://` o service worker
 fica desativado (o app continua funcionando, só sem cache offline).
 
+No iPhone, ao abrir a partir da Tela de Início, aparece uma **splash screen
+nativa** (boi com a marca AB + “Projeto Macarujá”), gerada para as resoluções
+de iPhone mais comuns em `splash/`.
+
 Arquivos do PWA: `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`,
-`icon-512-maskable.png`, `apple-touch-icon-180.png`.
+`icon-512-maskable.png`, `apple-touch-icon-180.png` e `splash/*.png`. O ícone é
+uma **silhueta de boi (zebu) com o “AB” gravado na testa**, como marca a ferro.
 
 ## Telas (capturas)
 
