@@ -109,6 +109,12 @@ funcionamento **offline** (o app shell fica em cache pelo service worker).
 Requisito: servir por **HTTPS** (o Vercel já faz). Em `file://` o service worker
 fica desativado (o app continua funcionando, só sem cache offline).
 
+> **Lembrete de backup:** como o iOS pode apagar o `localStorage` de sites pouco
+> usados após ~7 dias, o app guarda a data do último backup/sincronização e
+> exibe um **aviso no topo** quando passam 7 dias (ou nunca houve backup), com
+> atalhos para **Baixar JSON** e **Sincronizar** com o Supabase. A data zera ao
+> baixar o backup ou sincronizar.
+
 No iPhone, ao abrir a partir da Tela de Início, aparece uma **splash screen
 nativa** (boi com a marca AB + “Projeto Macarujá”), gerada para as resoluções
 de iPhone mais comuns em `splash/`.
