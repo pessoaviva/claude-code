@@ -281,7 +281,12 @@ initLine+'\n'+
   document.getElementById("copyBtn").addEventListener("click", function(){ copy(elCode.textContent, "✓ Código copiado!"); });
   document.getElementById("copyNoscript").addEventListener("click", function(){ copy(noscriptOnly(), "✓ <noscript> copiado!"); });
 
-  elPixel.addEventListener("input", render);
+  elPixel.addEventListener("input", function(){
+    // Aceita colar "Pixel ID: 123 456..." e mantém só os dígitos.
+    var digits = elPixel.value.replace(/\D/g, "");
+    if(digits !== elPixel.value) elPixel.value = digits;
+    render();
+  });
   elTest.addEventListener("input", render);
 
   render();
