@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gerador de Pixel do Meta — para Mercado Livre</title>
+<style>
+  :root{
+    --bg:#0b1020; --card:#141b30; --card2:#0f1526; --line:#26304d;
+    --txt:#e8edf7; --muted:#9aa6c2; --accent:#4f8cff; --accent2:#2563eb;
+    --ok:#22c55e; --warn:#f59e0b; --code:#0a0f1f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0b1020,#0c1226);color:var(--txt);
+    font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  .wrap{max-width:980px;margin:0 auto;padding:28px 18px 80px}
+  header h1{font-size:24px;margin:0 0 6px}
+  header p{color:var(--muted);margin:0 0 4px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .card h2{font-size:16px;margin:0 0 14px}
+  label{display:block;font-size:13px;color:var(--muted);margin:0 0 6px}
+  input[type=text]{width:100%;background:var(--card2);border:1px solid var(--line);
+    color:var(--txt);border-radius:9px;padding:10px 12px;font-size:15px}
+  input[type=text]:focus{outline:2px solid var(--accent)}
+  .field{margin-bottom:14px}
+  .hint{font-size:12px;color:var(--muted);margin-top:4px}
+  .ev{border:1px solid var(--line);border-radius:11px;padding:12px;margin-bottom:10px;background:var(--card2)}
+  .ev .top{display:flex;align-items:center;gap:10px}
+  .ev .top label{margin:0;color:var(--txt);font-size:14px;font-weight:600;cursor:pointer;flex:1}
+  .ev code{color:var(--accent);font-size:12px}
+  .ev .params{margin-top:10px;display:none;grid-template-columns:1fr 1fr;gap:8px}
+  .ev.open .params{display:grid}
+  .ev .params .full{grid-column:1 / -1}
+  .ev .params label{margin:0 0 3px}
+  .ev .params input{padding:8px 10px;font-size:14px}
+  input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+  .out{grid-column:1 / -1}
+  pre{background:var(--code);border:1px solid var(--line);border-radius:11px;
+    padding:16px;overflow:auto;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:#cfe0ff;max-height:420px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  button{background:var(--accent2);color:#fff;border:0;border-radius:9px;padding:10px 16px;
+    font-size:14px;font-weight:600;cursor:pointer}
+  button:hover{background:var(--accent)}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--txt)}
+  .note{background:#1a1405;border:1px solid #4a3a0a;color:#ffe2a8;border-radius:11px;
+    padding:14px;font-size:13px;margin-top:18px}
+  .note b{color:#ffd27a}
+  .ok{color:var(--ok)}
+  .err{color:#fca5a5;font-size:12px;margin-top:4px;min-height:14px}
+  a{color:var(--accent)}
+  .tag{display:inline-block;background:#0f2a18;color:#86efac;border:1px solid #1f5135;
+    border-radius:999px;padding:2px 9px;font-size:11px;margin-left:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Gerador de Pixel do Meta <span class="tag">Mercado Livre</span></h1>
+    <p>Preencha o ID do seu Pixel, escolha os eventos e copie o código pronto.</p>
+    <p>Funciona offline — nada é enviado a servidores.</p>
+  </header>
+
+  <div class="grid">
+    <!-- Config -->
+    <section class="card">
+      <h2>1. Configuração</h2>
+      <div class="field">
+        <label for="pixelId">ID do Pixel (15–16 dígitos)</label>
+        <input id="pixelId" type="text" inputmode="numeric" placeholder="Ex.: 123456789012345" autocomplete="off" />
+        <div class="err" id="pixelErr"></div>
+        <div class="hint">Encontre em: Gerenciador de Eventos do Meta → Fontes de dados → seu Pixel.</div>
+      </div>
+      <div class="field">
+        <label for="testCode">Test Event Code (opcional)</label>
+        <input id="testCode" type="text" placeholder="Ex.: TEST12345" autocomplete="off" />
+        <div class="hint">Só para testar no "Testar eventos". Deixe vazio em produção.</div>
+      </div>
+    </section>
+
+    <!-- Eventos -->
+    <section class="card">
+      <h2>2. Eventos</h2>
+      <p class="hint" style="margin-top:-6px">O <code>PageView</code> já vem incluso no código base. Marque os eventos extras e preencha os parâmetros.</p>
+      <div id="events"></div>
+    </section>
+
+    <!-- Saída -->
+    <section class="card out">
+      <h2>3. Código gerado</h2>
+      <div class="row">
+        <button id="copyBtn">Copiar código</button>
+        <button class="ghost" id="copyNoscript">Copiar só o &lt;noscript&gt;</button>
+        <span id="copyMsg" class="ok"></span>
+      </div>
+      <p class="hint">Cole isto dentro da tag <code>&lt;head&gt;</code> da sua página/landing page.</p>
+      <pre id="code"></pre>
+    </section>
+  </div>
+
+  <div class="note">
+    <b>⚠️ Importante para o Mercado Livre:</b> o ML <b>não permite inserir JavaScript</b> dentro
+    dos anúncios ou lojas oficiais — então este pixel <b>não roda dentro de um anúncio do ML</b>.
+    Use-o em uma <b>landing page / site próprio</b> que direciona o tráfego para seus anúncios
+    (o caminho recomendado: anúncio do Facebook/Instagram → sua landing com o pixel → botão que
+    leva ao anúncio no ML). Para registrar a <b>compra real concluída no ML</b>, o caminho correto
+    é a <b>Conversions API (server-side)</b> usando os dados de pedido — posso gerar essa parte
+    depois, se quiser.
+  </div>
+</div>
+
+<script>
+(function(){
+  // Definição dos eventos padrão do Meta + parâmetros úteis para e-commerce.
+  var EVENTS = [
+    {id:"ViewContent", label:"ViewContent — visualizou produto", params:["content_name","content_ids","value"]},
+    {id:"AddToCart", label:"AddToCart — adicionou ao carrinho", params:["content_name","content_ids","value"]},
+    {id:"InitiateCheckout", label:"InitiateCheckout — iniciou checkout", params:["content_ids","value","num_items"]},
+    {id:"Purchase", label:"Purchase — compra concluída", params:["content_ids","value","num_items"]},
+    {id:"Lead", label:"Lead — clicou para ir ao ML / contato", params:["content_name","value"]},
+    {id:"Contact", label:"Contact — clicou para falar (WhatsApp/chat)", params:["content_name"]},
+  ];
+
+  var PARAM_META = {
+    content_name:{label:"content_name", ph:"Nome do produto", quote:true},
+    content_ids:{label:"content_ids", ph:"Ex.: MLB123, MLB456", list:true},
+    value:{label:"value", ph:"Ex.: 199.90", num:true},
+    num_items:{label:"num_items", ph:"Ex.: 1", num:true},
+  };
+
+  var elEvents = document.getElementById("events");
+  var elCode = document.getElementById("code");
+  var elPixel = document.getElementById("pixelId");
+  var elTest = document.getElementById("testCode");
+  var elPixelErr = document.getElementById("pixelErr");
+
+  // Monta os cartões de eventos
+  EVENTS.forEach(function(ev){
+    var card = document.createElement("div");
+    card.className = "ev";
+    card.dataset.id = ev.id;
+    var cbId = "cb_"+ev.id;
+
+    var params = ev.params.map(function(p){
+      var m = PARAM_META[p];
+      var full = (p==="content_name"||p==="content_ids") ? "full" : "";
+      return '<div class="'+full+'">'
+        + '<label>'+m.label+'</label>'
+        + '<input type="text" data-param="'+p+'" placeholder="'+m.ph+'" autocomplete="off"/>'
+        + '</div>';
+    }).join("");
+
+    card.innerHTML =
+      '<div class="top">'
+      + '<input type="checkbox" id="'+cbId+'"/>'
+      + '<label for="'+cbId+'">'+ev.label+'</label>'
+      + '<code>'+ev.id+'</code>'
+      + '</div>'
+      + '<div class="params">'+params+'</div>';
+
+    elEvents.appendChild(card);
+
+    var cb = card.querySelector("input[type=checkbox]");
+    cb.addEventListener("change", function(){
+      card.classList.toggle("open", cb.checked);
+      render();
+    });
+    card.querySelectorAll("input[data-param]").forEach(function(i){
+      i.addEventListener("input", render);
+    });
+  });
+
+  function validPixel(id){ return /^\d{15,16}$/.test(id); }
+
+  function buildEventParams(card){
+    var obj = {};
+    card.querySelectorAll("input[data-param]").forEach(function(inp){
+      var raw = inp.value.trim();
+      if(!raw) return;
+      var p = inp.dataset.param, m = PARAM_META[p];
+      if(m.list){
+        obj[p] = raw.split(",").map(function(s){return s.trim();}).filter(Boolean);
+      } else if(m.num){
+        var n = Number(raw.replace(",", "."));
+        if(!isNaN(n)) obj[p] = n;
+      } else {
+        obj[p] = raw;
+      }
+    });
+    return obj;
+  }
+
+  // Serializa o objeto de parâmetros como literal JS legível
+  function js(obj){
+    var keys = Object.keys(obj);
+    if(!keys.length) return "";
+    var parts = keys.map(function(k){
+      var v = obj[k];
+      if(Array.isArray(v)) return k+": ["+v.map(function(x){return JSON.stringify(String(x));}).join(", ")+"]";
+      if(typeof v === "number") return k+": "+v;
+      return k+": "+JSON.stringify(v);
+    });
+    return "{ "+parts.join(", ")+" }";
+  }
+
+  function render(){
+    var id = elPixel.value.trim();
+    var test = elTest.value.trim();
+    elPixelErr.textContent = (id && !validPixel(id)) ? "ID inválido: deve ter 15 ou 16 dígitos." : "";
+
+    var pixelOut = validPixel(id) ? id : "SEU_PIXEL_ID";
+
+    // Eventos marcados
+    var trackLines = [];
+    document.querySelectorAll(".ev").forEach(function(card){
+      var cb = card.querySelector("input[type=checkbox]");
+      if(!cb.checked) return;
+      var name = card.dataset.id;
+      var params = buildEventParams(card);
+      var withCurrency = (params.value !== undefined) ? Object.assign({currency:"BRL"}, params) : params;
+      var p = js(withCurrency);
+      trackLines.push("  fbq('track', '"+name+"'"+(p ? ", "+p : "")+");");
+    });
+
+    var initLine = test
+      ? "  fbq('init', '"+pixelOut+"');\n  // Test Event Code: "+test+" (use no painel \"Testar eventos\")"
+      : "  fbq('init', '"+pixelOut+"');";
+
+    var trackBlock = trackLines.length ? "\n"+trackLines.join("\n") : "";
+
+    var code =
+'<!-- Meta Pixel Code -->\n'+
+'<script>\n'+
+'!function(f,b,e,v,n,t,s)\n'+
+'{if(f.fbq)return;n=f.fbq=function(){n.callMethod?\n'+
+'n.callMethod.apply(n,arguments):n.queue.push(arguments)};\n'+
+"if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';\n"+
+'n.queue=[];t=b.createElement(e);t.async=!0;\n'+
+'t.src=v;s=b.getElementsByTagName(e)[0];\n'+
+'s.parentNode.insertBefore(t,s)}(window, document,\'script\',\n'+
+"'https://connect.facebook.net/en_US/fbevents.js');\n"+
+initLine+'\n'+
+"  fbq('track', 'PageView');"+trackBlock+'\n'+
+'<\/script>\n'+
+'<noscript>\n'+
+'  <img height="1" width="1" style="display:none"\n'+
+'    src="https://www.facebook.com/tr?id='+pixelOut+'&ev=PageView&noscript=1"/>\n'+
+'</noscript>\n'+
+'<!-- End Meta Pixel Code -->';
+
+    elCode.textContent = code;
+  }
+
+  function noscriptOnly(){
+    var id = elPixel.value.trim();
+    var pixelOut = validPixel(id) ? id : "SEU_PIXEL_ID";
+    return '<noscript>\n'+
+      '  <img height="1" width="1" style="display:none"\n'+
+      '    src="https://www.facebook.com/tr?id='+pixelOut+'&ev=PageView&noscript=1"/>\n'+
+      '</noscript>';
+  }
+
+  function copy(text, msg){
+    var done = function(){ flash(msg); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done, function(){ legacy(text); done(); });
+    } else { legacy(text); done(); }
+  }
+  function legacy(text){
+    var ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); }catch(e){}
+    document.body.removeChild(ta);
+  }
+  var msgEl = document.getElementById("copyMsg");
+  var msgTimer;
+  function flash(m){ msgEl.textContent = m; clearTimeout(msgTimer); msgTimer = setTimeout(function(){msgEl.textContent="";}, 2200); }
+
+  document.getElementById("copyBtn").addEventListener("click", function(){ copy(elCode.textContent, "✓ Código copiado!"); });
+  document.getElementById("copyNoscript").addEventListener("click", function(){ copy(noscriptOnly(), "✓ <noscript> copiado!"); });
+
+  elPixel.addEventListener("input", render);
+  elTest.addEventListener("input", render);
+
+  render();
+})();
+</script>
+</body>
+</html>
