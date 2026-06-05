@@ -114,6 +114,11 @@ fica desativado (o app continua funcionando, só sem cache offline).
 > exibe um **aviso no topo** quando passam 7 dias (ou nunca houve backup), com
 > atalhos para **Baixar JSON** e **Sincronizar** com o Supabase. A data zera ao
 > baixar o backup ou sincronizar.
+>
+> Em Configuração há ainda: **Compartilhar backup** (Web Share — salva o JSON
+> direto no app **Arquivos/iCloud** no iPhone), **prazo do lembrete**
+> configurável (3/7/15/30 dias) e **auto-sincronizar quando logado** (envia
+> para o Supabase, em segundo plano, alguns segundos após cada alteração).
 
 No iPhone, ao abrir a partir da Tela de Início, aparece uma **splash screen
 nativa** (boi com a marca AB + “Projeto Macarujá”), gerada para as resoluções
