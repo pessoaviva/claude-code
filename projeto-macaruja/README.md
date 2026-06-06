@@ -35,6 +35,16 @@ dono** (cada usuário só acessa os próprios dados). Pronto para hospedar no
 - Histórico por brinco/EID.
 - **Intervalo em dias** entre pesagens **+ GMD por período** (P1→P2, P2→P3…).
 
+### Despesas — caixa da fazenda
+- Aba dedicada às **despesas diversas do dia a dia** (separada dos *Custos por
+  lote*): combustível (gasolina/diesel), diárias/mão de obra, peças, ferramentas,
+  medicamentos, alimentação/rancho, manutenção, sal mineral, energia, frete,
+  impostos (ITR), arrendamento e mais (categoria “Outros”).
+- **Lançamento rápido** (data, categoria, descrição, valor) com a categoria
+  lembrada entre lançamentos.
+- **Total geral** e **total mês a mês**, **média mensal**, **por categoria** e
+  filtro por mês. Sincroniza no Supabase (tabela `despesas`) e entra no backup.
+
 ### Vendidos & Baixas (novo na v2.1)
 - Botão **Vendido** abre um formulário com **comprador, CPF/CNPJ, data, peso,
   preço da @, lote de origem** e observação (GTA/nota). O animal sai do rebanho

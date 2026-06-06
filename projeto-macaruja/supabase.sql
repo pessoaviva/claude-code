@@ -117,6 +117,18 @@ create table if not exists custos (
   created_at           timestamptz default now()
 );
 
+-- ---------- DESPESAS (caixa da fazenda: despesas diversas) ----------
+create table if not exists despesas (
+  id            bigint generated always as identity primary key,
+  owner_id      uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  data_despesa  date not null,
+  categoria     text,        -- Gasolina, Óleo diesel, Diárias, Peças, Medicamentos...
+  descricao     text,
+  valor         numeric(14,2) default 0,
+  created_at    timestamptz default now()
+);
+create index if not exists idx_despesas_owner_data on despesas(owner_id, data_despesa);
+
 -- ---------- SAÚDE (vacinas, vermífugos, vitaminas, modificadores) ----------
 create table if not exists saude (
   id           bigint generated always as identity primary key,
@@ -183,7 +195,7 @@ declare t text;
 begin
   foreach t in array array[
     'dietas','ingredientes','dieta_itens','semiconfinamentos','animais',
-    'pesagens','movimentacoes','custos','saude','vendas','baixas','leituras_rfid'
+    'pesagens','movimentacoes','custos','despesas','saude','vendas','baixas','leituras_rfid'
   ] loop
     execute format('alter table %I enable row level security;', t);
     -- remove eventuais políticas abertas herdadas de versões antigas

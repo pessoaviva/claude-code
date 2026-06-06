@@ -85,7 +85,7 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),
 <div class="splash"><div><div class="abmark">AB</div><h1>Projeto Macarujá</h1><p>Engorda de precisão · v2.1</p></div></div>
 <div class="app">
 <aside class="side"><div class="brand"><div class="abmark">AB</div><div><b>Projeto Macarujá</b><span>v2.1 · Engorda de precisão</span></div></div><nav class="nav" id="nav"></nav><div class="sidefooter"><button class="btn secondary" onclick="toggleTheme()"><span id="themeIconBtn"></span>Modo claro/escuro</button><button class="btn" onclick="save(true)"><span id="saveIconBtn"></span>Salvar dados</button></div></aside>
-<main class="main"><div class="top"><div><div class="eyebrow">Gestão da Engorda · Fazenda Macarujá</div><div class="title" id="pageTitle">Projeto Macarujá - AB</div><div class="sub" id="pageSub">Mapa do rebanho, custos, dietas, semiconfinamentos e resultado econômico da engorda.</div></div><div class="quick"><span class="pill">Marca AB aplicada</span><span class="pill" id="dateBadge"></span><span class="pill" id="saveBadge">local + nuvem opcional</span></div></div><div id="backupBar"></div><section class="grid kpis" id="kpis"></section><section id="dashboard" class="panel active"></section><section id="rebanho" class="panel"></section><section id="semis" class="panel"></section><section id="dietas" class="panel"></section><section id="saude" class="panel"></section><section id="alocacao" class="panel"></section><section id="pesagens" class="panel"></section><section id="custos" class="panel"></section><section id="vendidos" class="panel"></section><section id="resultado" class="panel"></section><section id="config" class="panel"></section></main></div><div class="mobilebar" id="mnav"></div><div id="modalRoot"></div>
+<main class="main"><div class="top"><div><div class="eyebrow">Gestão da Engorda · Fazenda Macarujá</div><div class="title" id="pageTitle">Projeto Macarujá - AB</div><div class="sub" id="pageSub">Mapa do rebanho, custos, dietas, semiconfinamentos e resultado econômico da engorda.</div></div><div class="quick"><span class="pill">Marca AB aplicada</span><span class="pill" id="dateBadge"></span><span class="pill" id="saveBadge">local + nuvem opcional</span></div></div><div id="backupBar"></div><section class="grid kpis" id="kpis"></section><section id="dashboard" class="panel active"></section><section id="rebanho" class="panel"></section><section id="semis" class="panel"></section><section id="dietas" class="panel"></section><section id="saude" class="panel"></section><section id="alocacao" class="panel"></section><section id="pesagens" class="panel"></section><section id="custos" class="panel"></section><section id="despesas" class="panel"></section><section id="vendidos" class="panel"></section><section id="resultado" class="panel"></section><section id="config" class="panel"></section></main></div><div class="mobilebar" id="mnav"></div><div id="modalRoot"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
@@ -101,6 +101,7 @@ const iconSVG=k=>{const icons={
  alocacao:'M7 7h10M17 7l-3-3M17 7l-3 3M17 17H7M7 17l3-3M7 17l3 3',
  pesagens:'M12 3v18M6 7h12M5 7l-3 6h6L5 7Zm14 0l-3 6h6l-3-6Z',
  custos:'M12 3c5 0 9 2 9 5s-4 5-9 5-9-2-9-5 4-5 9-5Zm-9 5v8c0 3 4 5 9 5s9-2 9-5V8',
+ despesas:'M3 8h15a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8Zm0 0 2.5-4h11L19 8M16 13h.5',
  resultado:'M4 19V5M4 19h16M8 16l3-4 3 2 5-7',
  config:'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0-5v3M12 18v3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M3 12h3M18 12h3M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1',
  theme:'M21 12.6A8.5 8.5 0 1 1 11.4 3 6.6 6.6 0 0 0 21 12.6Z',
@@ -131,9 +132,12 @@ const SAUDE_TIPOS={
  'Vitamina':['ADE','B12','E + Selênio','Cálcio/Fósforo','Complexo mineral injetável','Outra'],
  'Modificador orgânico':['Monensina','Virginiamicina','Probiótico (levedura)','Tanino','Óleo essencial','Outro']
 };
-let state={}; let filtroLocal='todos'; let filtroSaude='todos';
+const DESPESAS_CAT=['Medicamentos/Sanitário','Gasolina','Óleo diesel','Alimentação/Rancho','Diárias/Mão de obra','Peças','Ferramentas','Manutenção','Sal mineral/Suplemento','Ração/Insumos','Sementes/Adubo/Pasto','Energia elétrica','Água','Frete/Transporte','Veterinário/Serviços','Impostos/Taxas (ITR)','Arrendamento','Telefone/Internet','Outros'];
+const MESES_PT=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const mesLabel=m=>{if(!m)return '—';let p=m.split('-');return MESES_PT[(+p[1])-1]+'/'+p[0];};
+let state={}; let filtroLocal='todos'; let filtroSaude='todos'; let despFiltro='todos';
 
-const menu=[['dashboard','dashboard','Projeto Macarujá - AB','Visão geral do rebanho, custos e desempenho da engorda'],['rebanho','rebanho','Rebanho','Cadastro, origem, categoria e dias na Fazenda Macarujá'],['semis','semis','Semiconfinamentos','Lotes, dieta, GMD, saída prevista e custo'],['dietas','dietas','Dietas','Ingredientes, custo/kg e diária alimentar'],['saude','saude','Saúde','Vacinas, vermífugos, vitaminas e modificadores'],['alocacao','alocacao','Alocação','Pinçar animais e montar lotes'],['pesagens','pesagens','Pesagens','Histórico, intervalo em dias e GMD por período'],['custos','custos','Custos','Alimentar, sanitário e operacional'],['vendidos','sale','Vendidos & Baixas','Animais vendidos, dados da venda e mortes/baixas'],['resultado','resultado','Resultado','Lucro por animal, lote e dieta'],['config','config','Configuração','Login, segurança, backup e Supabase']];
+const menu=[['dashboard','dashboard','Projeto Macarujá - AB','Visão geral do rebanho, custos e desempenho da engorda'],['rebanho','rebanho','Rebanho','Cadastro, origem, categoria e dias na Fazenda Macarujá'],['semis','semis','Semiconfinamentos','Lotes, dieta, GMD, saída prevista e custo'],['dietas','dietas','Dietas','Ingredientes, custo/kg e diária alimentar'],['saude','saude','Saúde','Vacinas, vermífugos, vitaminas e modificadores'],['alocacao','alocacao','Alocação','Pinçar animais e montar lotes'],['pesagens','pesagens','Pesagens','Histórico, intervalo em dias e GMD por período'],['custos','custos','Custos por lote','Custos extras do semiconfinamento (entram no custo/@)'],['despesas','despesas','Despesas','Caixa da fazenda: despesas diversas do dia a dia'],['vendidos','sale','Vendidos & Baixas','Animais vendidos, dados da venda e mortes/baixas'],['resultado','resultado','Resultado','Lucro por animal, lote e dieta'],['config','config','Configuração','Login, segurança, backup e Supabase']];
 
 /* ===================== NUVEM / SEGURANÇA ===================== */
 const CLOUD_KEY='macaruja_supabase_cfg_v2';
@@ -173,6 +177,7 @@ function migrate(){ // garante campos novos em dados antigos
  (state.semis||[]).forEach(s=>{s.duracaoDias=s.duracaoDias??90;s.pesoAlvo=s.pesoAlvo??0;});
  if(state.backupEvery==null)state.backupEvery=7;
  if(state.autoSync==null)state.autoSync=false;
+ if(!Array.isArray(state.despesas))state.despesas=[];
 }
 function load(){try{let raw=localStorage.getItem(SKEY); raw?state=JSON.parse(raw):seed();}catch(e){seed()} migrate(); document.documentElement.dataset.theme=state.theme||'light'}
 function save(show){localStorage.setItem(SKEY,JSON.stringify(state)); if(show)toast('Dados salvos no navegador.'); renderKpis(); let b=$('saveBadge'); if(b&&!show)b.textContent=cloudStatus(); scheduleAutoSync();}
@@ -345,6 +350,44 @@ function renderCustos(){let rows=state.costs.map(c=>`<tr><td>${esc(semi(c.semiId
 function addCost(){state.costs.unshift({id:Date.now(),semiId:+$('c_semi').value,tipo:$('c_tipo').value,desc:$('c_desc').value,valor:+$('c_val').value||0});save(false);render()}
 
 /* ===================== VENDA / RESULTADO ===================== */
+/* ===================== DESPESAS (caixa da fazenda) ===================== */
+function setDespFiltro(m){despFiltro=m;renderDespesas()}
+function addDespesa(){let v=+$('dp_val').value||0;if(!v)return alert('Informe o valor da despesa.');let cat=$('dp_cat').value;state.despesas=state.despesas||[];state.despesas.unshift({id:Date.now(),d:$('dp_data').value||today,categoria:cat,desc:$('dp_desc').value||'',valor:v});state.despCatLast=cat;save(false);renderDespesas();toast('Despesa lançada.')}
+function delDespesa(id){if(!confirm('Excluir este lançamento?'))return;state.despesas=(state.despesas||[]).filter(x=>x.id!=id);save(false);renderDespesas()}
+function renderDespesas(){
+ const all=[...(state.despesas||[])].sort((a,b)=>new Date(b.d)-new Date(a.d)||b.id-a.id);
+ const mesAtual=today.slice(0,7);
+ const totalGeral=all.reduce((s,x)=>s+(+x.valor||0),0);
+ const totalMesAtual=all.filter(x=>(x.d||'').slice(0,7)===mesAtual).reduce((s,x)=>s+(+x.valor||0),0);
+ const porMes={};all.forEach(x=>{let m=(x.d||'').slice(0,7);if(m){porMes[m]=porMes[m]||{t:0,n:0};porMes[m].t+=(+x.valor||0);porMes[m].n++;}});
+ const meses=Object.keys(porMes).sort((a,b)=>b.localeCompare(a));
+ const mediaMes=meses.length?totalGeral/meses.length:0;
+ const list=despFiltro==='todos'?all:all.filter(x=>(x.d||'').slice(0,7)===despFiltro);
+ const totalFiltro=list.reduce((s,x)=>s+(+x.valor||0),0);
+ const porCat={};list.forEach(x=>{porCat[x.categoria||'Outros']=(porCat[x.categoria||'Outros']||0)+(+x.valor||0)});
+ const catOrden=Object.entries(porCat).sort((a,b)=>b[1]-a[1]);
+ const lastCat=state.despCatLast||DESPESAS_CAT[0];
+ $('despesas').innerHTML=`
+ <div class="grid kpis" style="grid-template-columns:repeat(4,minmax(140px,1fr))">
+  <div class="kpi" style="--tint:var(--red2)"><div class="khead">${iconSVG('despesas')}<span>Total geral</span></div><strong>${brl(totalGeral)}</strong></div>
+  <div class="kpi" style="--tint:var(--gold2)"><div class="khead">${iconSVG('custos')}<span>${mesLabel(mesAtual)}</span></div><strong>${brl(totalMesAtual)}</strong></div>
+  <div class="kpi" style="--tint:var(--blue2)"><div class="khead">${iconSVG('resultado')}<span>Média mensal</span></div><strong>${brl(mediaMes)}</strong></div>
+  <div class="kpi" style="--tint:var(--green2)"><div class="khead">${iconSVG('pesagens')}<span>Lançamentos</span></div><strong>${all.length}</strong></div>
+ </div>
+ <div class="card"><h3>${hi('plus')}Lançar despesa</h3><p class="muted">Caixa da fazenda — despesas diversas do dia a dia (combustível, diárias, peças, medicamentos…).</p>
+ <div class="form">
+  <div><label>Data</label><input type="date" id="dp_data" value="${today}"></div>
+  <div><label>Categoria</label><select id="dp_cat">${DESPESAS_CAT.map(c=>`<option ${c===lastCat?'selected':''}>${c}</option>`).join('')}</select></div>
+  <div class="wide"><label>Descrição</label><input id="dp_desc" placeholder="Ex.: diesel posto, diária do João, correia do trator"></div>
+  <div><label>Valor (R$)</label><input type="number" inputmode="decimal" step="0.01" id="dp_val" placeholder="0,00"></div>
+  <div><label>&nbsp;</label><button class="btn full" onclick="addDespesa()">Adicionar</button></div>
+ </div></div>
+ <div class="row" style="margin:14px 0;justify-content:space-between"><div class="row"><label style="margin:0;text-transform:none">Período</label><select style="width:auto" onchange="setDespFiltro(this.value)"><option value="todos" ${despFiltro==='todos'?'selected':''}>Todos os meses</option>${meses.map(m=>`<option value="${m}" ${despFiltro===m?'selected':''}>${mesLabel(m)}</option>`).join('')}</select></div><span class="pill">Total do período: <b>${brl(totalFiltro)}</b> · ${list.length} lançamento(s)</span></div>
+ <div class="split">
+  <div class="card"><h3>${hi('resultado')}Resumo mês a mês</h3>${meses.length?`<div class="tablewrap"><table><tr><th>Mês</th><th>Lançs.</th><th>Total</th></tr>${meses.map(m=>`<tr><td><b>${mesLabel(m)}</b></td><td>${porMes[m].n}</td><td><b>${brl(porMes[m].t)}</b></td></tr>`).join('')}<tr><td><b>Total geral</b></td><td>${all.length}</td><td><b>${brl(totalGeral)}</b></td></tr></table></div>`:'<div class="empty">Sem despesas lançadas ainda.</div>'}</div>
+  <div class="card"><h3>${hi('despesas')}Por categoria${despFiltro==='todos'?'':' · '+mesLabel(despFiltro)}</h3>${catOrden.length?catOrden.map(([c,v])=>`<p class="between"><span>${esc(c)}</span><b>${brl(v)}</b></p><div class="progress" style="margin:4px 0 10px"><span style="width:${totalFiltro?Math.round(v/totalFiltro*100):0}%"></span></div>`).join(''):'<div class="empty">Nada no período.</div>'}</div>
+ </div>
+ <div class="card" style="margin-top:14px"><h3>Lançamentos${despFiltro==='todos'?'':' · '+mesLabel(despFiltro)}</h3>${list.length?`<div class="tablewrap"><table><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th></th></tr>${list.map(x=>`<tr><td>${fdate(x.d)}</td><td><span class="tag gold">${esc(x.categoria||'Outros')}</span></td><td>${esc(x.desc||'—')}</td><td><b>${brl(x.valor)}</b></td><td><button class="btn small red" onclick="delDespesa(${x.id})">×</button></td></tr>`).join('')}</table></div>`:'<div class="empty">Nenhum lançamento no período.</div>'}</div>`}
 function sell(id){let a=animal(id);if(!a)return;let l=lastW(a);let lote=semi(a.semiId)?.nome||(a.local==='pasto'?'Pasto':'—');
  openSheet('Registrar venda · '+(a.ferro||a.eid||'animal'),`
  <div class="form2">
@@ -402,8 +445,8 @@ async function cloudLogout(){try{let db=cloudClient();await db.auth.signOut();cl
 async function testCloud(){try{setCloudCfg($('sb_url').value,$('sb_key').value);let db=cloudClient();await refreshSession();requireSession();await must(await db.from('animais').select('id').limit(1));toast('Conexão Supabase OK (autenticado).');}catch(e){alert('Falha: '+e.message)}}
 async function tableAvailable(db,t){let r=await db.from(t).select('id').limit(1);return !r.error}
 async function saveCloud(silent){try{requireSession();let db=cloudClient();if(!silent&&!confirm('Enviar os dados locais para o Supabase? Isso substitui os seus dados na nuvem.'))return;syncing=true;if(!silent)toast('Enviando para Supabase...');
-  const hasSaude=await tableAvailable(db,'saude');const hasIng=await tableAvailable(db,'ingredientes')&&await tableAvailable(db,'dieta_itens');const hasBaixas=await tableAvailable(db,'baixas');
-  const clear=['vendas','custos','pesagens','movimentacoes'].concat(hasBaixas?['baixas']:[]).concat(hasSaude?['saude']:[]).concat(hasIng?['dieta_itens']:[]).concat(['semiconfinamentos','dietas']).concat(hasIng?['ingredientes']:[]).concat(['animais']);
+  const hasSaude=await tableAvailable(db,'saude');const hasIng=await tableAvailable(db,'ingredientes')&&await tableAvailable(db,'dieta_itens');const hasBaixas=await tableAvailable(db,'baixas');const hasDesp=await tableAvailable(db,'despesas');
+  const clear=['vendas','custos','pesagens','movimentacoes'].concat(hasDesp?['despesas']:[]).concat(hasBaixas?['baixas']:[]).concat(hasSaude?['saude']:[]).concat(hasIng?['dieta_itens']:[]).concat(['semiconfinamentos','dietas']).concat(hasIng?['ingredientes']:[]).concat(['animais']);
   for(const t of clear){await must(await db.from(t).delete().neq('id',0));}
   const dietas=state.dietas.length?await must(await db.from('dietas').insert(state.dietas.map(d=>({nome:d.nome,observacoes:hasIng?'':JSON.stringify({itens:d.itens||[]})}))).select()):[];
   const dietaMap={};dietas.forEach((d,i)=>dietaMap[state.dietas[i]?.id]=d.id);
@@ -418,13 +461,14 @@ async function saveCloud(silent){try{requireSession();let db=cloudClient();if(!s
   if(hasSaude){const sa=[];state.animals.forEach(a=>(a.saude||[]).forEach(s=>sa.push({animal_id:animalMap[a.id],data_evento:s.d,tipo:s.tipo,produto:s.produto,dose:s.dose||'',observacao:s.obs||''})));if(sa.length)await must(await db.from('saude').insert(sa));}
   const vendas=state.animals.filter(a=>a.status==='vendido').map(a=>({animal_id:animalMap[a.id],data_venda:a.dataVenda||today,peso_venda:+a.pesoVenda||null,arrobas:arroba(+a.pesoVenda||0),valor_arroba:+a.precoArroba||0,comprador:a.comprador||'',cpf_comprador:a.cpfComprador||'',lote_nome:a.loteVendaNome||'',semiconfinamento_id:semiMap[a.semiVendaId]||null,observacao:a.vendaObs||'',valor_total:arroba(+a.pesoVenda||0)*(+a.precoArroba||0)}));if(vendas.length)await must(await db.from('vendas').insert(vendas));
   if(hasBaixas){const bx=state.animals.filter(a=>a.status==='morto'&&a.morte).map(a=>({animal_id:animalMap[a.id],data_morte:a.morte.d||today,causa:a.morte.causa||'',cercado:a.morte.cercado||'',observacao:a.morte.obs||''}));if(bx.length)await must(await db.from('baixas').insert(bx));}
+  if(hasDesp){const dp=(state.despesas||[]).map(x=>({data_despesa:x.d||today,categoria:x.categoria||'Outros',descricao:x.desc||'',valor:+x.valor||0}));if(dp.length)await must(await db.from('despesas').insert(dp));}
   markBackup();save(false);syncing=false;if(silent){let b=$('saveBadge');if(b)b.textContent='✓ nuvem '+new Date().toLocaleTimeString('pt-BR').slice(0,5);}else toast('Dados enviados para Supabase com segurança.');
 }catch(e){syncing=false;if(!silent)alert('Erro ao salvar no Supabase: '+e.message);else{let b=$('saveBadge');if(b)b.textContent='⚠ falha ao sincronizar';}}}
 async function loadCloud(){try{requireSession();if(!confirm('Carregar dados da nuvem e substituir os dados locais deste aparelho?'))return;let db=cloudClient();toast('Carregando Supabase...');
-  const hasSaude=await tableAvailable(db,'saude');const hasIng=await tableAvailable(db,'ingredientes')&&await tableAvailable(db,'dieta_itens');const hasBaixas=await tableAvailable(db,'baixas');
+  const hasSaude=await tableAvailable(db,'saude');const hasIng=await tableAvailable(db,'ingredientes')&&await tableAvailable(db,'dieta_itens');const hasBaixas=await tableAvailable(db,'baixas');const hasDesp=await tableAvailable(db,'despesas');
   const base=[db.from('animais').select('*').order('id'),db.from('dietas').select('*').order('id'),db.from('semiconfinamentos').select('*').order('id'),db.from('pesagens').select('*').order('data_pesagem'),db.from('custos').select('*').order('id'),db.from('movimentacoes').select('*').order('id'),db.from('vendas').select('*').order('id')];
   const [animais,dietas,semis,pesagens,custos,movs,vendas]=await Promise.all(base.map(async p=>must(await p)));
-  let ing=[],di=[],saude=[],baixas=[];if(hasIng){[ing,di]=await Promise.all([db.from('ingredientes').select('*'),db.from('dieta_itens').select('*')].map(async p=>must(await p)));}if(hasSaude){saude=await must(await db.from('saude').select('*'));}if(hasBaixas){baixas=await must(await db.from('baixas').select('*'));}
+  let ing=[],di=[],saude=[],baixas=[],despesas=[];if(hasIng){[ing,di]=await Promise.all([db.from('ingredientes').select('*'),db.from('dieta_itens').select('*')].map(async p=>must(await p)));}if(hasSaude){saude=await must(await db.from('saude').select('*'));}if(hasBaixas){baixas=await must(await db.from('baixas').select('*'));}if(hasDesp){despesas=await must(await db.from('despesas').select('*'));}
   const ingById={};ing.forEach(i=>ingById[i.id]=i);
   state.dietas=dietas.map(d=>({id:d.id,nome:d.nome,itens:hasIng?di.filter(x=>x.dieta_id==d.id).map(x=>[ingById[x.ingrediente_id]?.nome||'Ingrediente',+x.kg_animal_dia||0,+x.preco_kg_snapshot||+ingById[x.ingrediente_id]?.preco_kg||0]):(parseObs(d.observacoes,{itens:[]}).itens||[])}));
   state.semis=semis.map(s=>({id:s.id,nome:s.nome,inicio:s.data_inicio,dietaId:s.dieta_id,metaGmd:+s.meta_gmd||1.6,duracaoDias:+s.duracao_dias||90,pesoAlvo:+s.peso_alvo||0}));
@@ -437,6 +481,7 @@ async function loadCloud(){try{requireSession();if(!confirm('Carregar dados da n
   state.costs=custos.map(c=>({id:c.id,semiId:c.semiconfinamento_id,tipo:c.tipo,desc:c.descricao,valor:+c.valor||0}));
   vendas.forEach(v=>{let a=byId(v.animal_id);if(a){a.status='vendido';a.dataVenda=v.data_venda;a.pesoVenda=+v.peso_venda||0;a.precoArroba=+v.valor_arroba||0;a.comprador=v.comprador||'';a.cpfComprador=v.cpf_comprador||'';a.loteVendaNome=v.lote_nome||'';a.semiVendaId=v.semiconfinamento_id||null;a.vendaObs=v.observacao||''}});
   baixas.forEach(b=>{let a=byId(b.animal_id);if(a){a.status='morto';a.morte={d:b.data_morte,causa:b.causa||'',cercado:b.cercado||'',obs:b.observacao||''}}});
+  state.despesas=despesas.map(x=>({id:x.id,d:x.data_despesa,categoria:x.categoria,desc:x.descricao,valor:+x.valor||0}));
   migrate();markBackup();save(false);render();toast('Dados carregados da nuvem.');
 }catch(e){alert('Erro ao carregar Supabase: '+e.message)}}
 
@@ -471,7 +516,7 @@ function renderBackupBar(){let bar=$('backupBar');if(!bar)return;let d=daysSince
  bar.innerHTML=`<div class="note red" style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
  <span>${iconSVG('backup')} ${d===null?'Você ainda não fez backup.':'Último backup há <b>'+d+' dia(s)</b>.'} No iPhone os dados locais podem ser apagados após ~7 dias sem uso — proteja-se.</span>
  <span class="row"><button class="btn small" onclick="downloadBackup()">Baixar JSON</button><button class="btn small blue" onclick="show('config')">Sincronizar nuvem</button><button class="btn small secondary" onclick="state.backupDismissed='${today}';save(false);renderBackupBar()">Dispensar hoje</button></span></div>`}
-function render(){renderKpis();renderBackupBar();let active=document.querySelector('.panel.active')?.id||'dashboard';({dashboard:renderDashboard,rebanho:renderRebanho,semis:renderSemis,dietas:renderDietas,saude:renderSaude,alocacao:renderAlocacao,pesagens:renderPesagens,custos:renderCustos,vendidos:renderVendidos,resultado:renderResultado,config:renderConfig}[active]||renderDashboard)();document.querySelectorAll('[data-p]').forEach(b=>b.classList.toggle('active',b.dataset.p===active))}
+function render(){renderKpis();renderBackupBar();let active=document.querySelector('.panel.active')?.id||'dashboard';({dashboard:renderDashboard,rebanho:renderRebanho,semis:renderSemis,dietas:renderDietas,saude:renderSaude,alocacao:renderAlocacao,pesagens:renderPesagens,custos:renderCustos,despesas:renderDespesas,vendidos:renderVendidos,resultado:renderResultado,config:renderConfig}[active]||renderDashboard)();document.querySelectorAll('[data-p]').forEach(b=>b.classList.toggle('active',b.dataset.p===active))}
 load();nav();render();refreshSession().then(()=>{if($('saveBadge'))$('saveBadge').textContent=cloudStatus()});
 /* atalho: abrir painel a partir do hash (#rebanho) — usado pelos shortcuts do PWA */
 (function(){let h=(location.hash||'').replace('#','');if(h&&menu.some(m=>m[0]===h))show(h);window.addEventListener('hashchange',()=>{let x=(location.hash||'').replace('#','');if(x&&menu.some(m=>m[0]===x))show(x)})})();
