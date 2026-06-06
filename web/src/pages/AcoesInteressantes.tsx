@@ -3,6 +3,7 @@ import { api } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
 import { brl, dateBR, pct, signColor } from "../lib/format";
 import { Banner, Button, Card, Input, Stat, Table } from "../components/ui";
+import { fetchQuote, getBrapiToken, setBrapiToken } from "../lib/quoteFetch";
 
 interface Item {
   id: string;
@@ -25,7 +26,7 @@ interface WatchlistData {
 
 const EMPTY_ADD = { company: "", ticker: "", quantity: "", buyPrice: "", currentPrice: "" };
 
-// Live (client-side) recompute for instant feedback while editing.
+// Recálculo client-side para feedback instantâneo enquanto edita.
 function calc(it: Item) {
   const qty = Number(it.quantity) || 0;
   const buy = Number(it.buyPrice) || 0;
@@ -41,7 +42,10 @@ export function AcoesInteressantes() {
   const { data, error, loading, reload } = useFetch<WatchlistData>(() => api.get("/watchlist"));
   const [rows, setRows] = useState<Item[]>([]);
   const [add, setAdd] = useState(EMPTY_ADD);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ kind: "error" | "success" | "info"; text: string } | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busyAll, setBusyAll] = useState(false);
+  const [token, setToken] = useState(getBrapiToken());
 
   useEffect(() => {
     if (data) setRows(data.items);
@@ -58,8 +62,42 @@ export function AcoesInteressantes() {
       const updated = await api.patch<Item>(`/watchlist/${id}`, { quantity: row.quantity || "0", buyPrice: row.buyPrice || "0", currentPrice: row.currentPrice || "0" });
       setRows((rs) => rs.map((r) => (r.id === id ? updated : r)));
     } catch (e) {
-      setMsg((e as Error).message);
+      setMsg({ kind: "error", text: (e as Error).message });
     }
+  }
+
+  async function refreshOne(id: string, ticker: string) {
+    setBusyId(id);
+    setMsg(null);
+    try {
+      const { price, source } = await fetchQuote(ticker);
+      const updated = await api.patch<Item>(`/watchlist/${id}`, { currentPrice: price });
+      setRows((rs) => rs.map((r) => (r.id === id ? updated : r)));
+      setMsg({ kind: "success", text: `${ticker}: ${brl(price)} (${source})` });
+    } catch (e) {
+      setMsg({ kind: "error", text: (e as Error).message });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function refreshAll() {
+    setBusyAll(true);
+    setMsg({ kind: "info", text: "Atualizando cotações…" });
+    let ok = 0;
+    let fail = 0;
+    for (const r of rows) {
+      try {
+        const { price } = await fetchQuote(r.ticker);
+        const updated = await api.patch<Item>(`/watchlist/${r.id}`, { currentPrice: price });
+        setRows((rs) => rs.map((x) => (x.id === r.id ? updated : x)));
+        ok++;
+      } catch {
+        fail++;
+      }
+    }
+    setBusyAll(false);
+    setMsg({ kind: fail === 0 ? "success" : "info", text: `Atualização concluída: ${ok} ok, ${fail} falharam.` + (fail > 0 ? " As que falharam podem ser editadas manualmente (ou configure um token brapi)." : "") });
   }
 
   async function addStock(e: React.FormEvent) {
@@ -70,7 +108,7 @@ export function AcoesInteressantes() {
       setAdd(EMPTY_ADD);
       await reload();
     } catch (e) {
-      setMsg((e as Error).message);
+      setMsg({ kind: "error", text: (e as Error).message });
     }
   }
 
@@ -79,7 +117,6 @@ export function AcoesInteressantes() {
     await reload();
   }
 
-  // Totals from the live editable state.
   const totals = rows.reduce(
     (acc, r) => {
       const c = calc(r);
@@ -102,12 +139,27 @@ export function AcoesInteressantes() {
       </div>
 
       <Banner kind="info">
-        Preços atuais são uma <strong>referência</strong> de {data ? dateBR(data.refDate) : "—"} — edite-os à vontade
-        (no modo navegador não há busca automática). Preencha a <strong>quantidade</strong> e o <strong>preço pago</strong>
-        das ações que você comprou para ver o lucro/prejuízo.
+        Preencha a <strong>quantidade</strong> e o <strong>preço pago</strong> das ações que você comprou.
+        Use <strong>Atualizar cotações</strong> para buscar o preço atual online; se falhar (CORS), edite manualmente.
+        Referência inicial de {data ? dateBR(data.refDate) : "—"}.
       </Banner>
 
-      {msg && <Banner kind="error">{msg}</Banner>}
+      {msg && <Banner kind={msg.kind}>{msg.text}</Banner>}
+
+      <details className="rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-sm">
+        <summary className="cursor-pointer text-slate-300">⚙️ Cotação online mais confiável (token brapi opcional)</summary>
+        <div className="mt-3 space-y-2 text-slate-400">
+          <p>
+            A busca online tenta um proxy público (sem configuração). Para mais estabilidade, pegue um token grátis em{" "}
+            <a href="https://brapi.dev" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">brapi.dev</a>{" "}
+            e cole abaixo (fica salvo só neste navegador).
+          </p>
+          <div className="flex gap-2">
+            <Input placeholder="Token brapi (opcional)" value={token} onChange={(e) => setToken(e.target.value)} />
+            <Button onClick={() => { setBrapiToken(token); setMsg({ kind: "success", text: token.trim() ? "Token salvo." : "Token removido." }); }}>Salvar</Button>
+          </div>
+        </div>
+      </details>
 
       <Card title="Adicionar ação à lista">
         <form onSubmit={addStock} className="grid gap-3 md:grid-cols-6">
@@ -121,6 +173,12 @@ export function AcoesInteressantes() {
       </Card>
 
       <Card title="Ações interessantes">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-xs text-slate-500">Edite os campos; o lucro/prejuízo recalcula na hora.</span>
+          <Button onClick={refreshAll} disabled={busyAll || rows.length === 0}>
+            {busyAll ? "Atualizando…" : "↻ Atualizar cotações"}
+          </Button>
+        </div>
         {loading && <p className="text-slate-400">Carregando…</p>}
         {error && <Banner kind="error">{error}</Banner>}
         {!loading && (
@@ -142,9 +200,15 @@ export function AcoesInteressantes() {
                       className="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm" />
                   </td>
                   <td className="px-2 py-2">
-                    <input type="number" step="0.01" min="0" value={r.currentPrice}
-                      onChange={(e) => setField(r.id, "currentPrice", e.target.value)} onBlur={() => persist(r.id)}
-                      className="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm" />
+                    <div className="flex items-center gap-1">
+                      <input type="number" step="0.01" min="0" value={r.currentPrice}
+                        onChange={(e) => setField(r.id, "currentPrice", e.target.value)} onBlur={() => persist(r.id)}
+                        className="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm" />
+                      <button onClick={() => refreshOne(r.id, r.ticker)} disabled={busyId === r.id} title="Buscar cotação online"
+                        className="rounded bg-slate-800 px-1.5 py-1 text-xs text-sky-300 hover:bg-slate-700 disabled:opacity-50">
+                        {busyId === r.id ? "…" : "↻"}
+                      </button>
+                    </div>
                   </td>
                   <td className="px-2 py-2">{brl(c.invested)}</td>
                   <td className="px-2 py-2">{brl(c.current)}</td>
