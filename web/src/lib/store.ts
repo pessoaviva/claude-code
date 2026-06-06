@@ -20,6 +20,7 @@ export interface DB {
   sales: Row[];
   goals: Row[];
   audit_log: Row[];
+  watchlist: Row[];
   _seq: Record<string, number>;
 }
 
@@ -29,7 +30,7 @@ function empty(): DB {
   return {
     income: [], expenses: [], stocks: [], quotes: [], quote_attempts: [],
     stock_contributions: [], assets: [], products: [], purchases: [], sales: [],
-    goals: [], audit_log: [], _seq: {},
+    goals: [], audit_log: [], watchlist: [], _seq: {},
   };
 }
 

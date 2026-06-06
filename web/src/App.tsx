@@ -3,6 +3,7 @@ import { resetAll } from "./lib/store";
 import { Dashboard } from "./pages/Dashboard";
 import { Transactions, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from "./pages/Transactions";
 import { Stocks } from "./pages/Stocks";
+import { AcoesInteressantes } from "./pages/AcoesInteressantes";
 import { Quotes } from "./pages/Quotes";
 import { NetWorth } from "./pages/NetWorth";
 import { Sales } from "./pages/Sales";
@@ -14,6 +15,7 @@ const NAV = [
   { id: "income", label: "Ganhos" },
   { id: "expenses", label: "Gastos" },
   { id: "stocks", label: "Ações" },
+  { id: "watchlist", label: "Ações Interessantes" },
   { id: "quotes", label: "Cotações" },
   { id: "networth", label: "Patrimônio" },
   { id: "sales", label: "Vendas" },
@@ -50,6 +52,7 @@ export function App() {
         {tab === "income" && <Transactions endpoint="/income" categories={INCOME_CATEGORIES} title="Ganhos" accent="text-emerald-400" />}
         {tab === "expenses" && <Transactions endpoint="/expenses" categories={EXPENSE_CATEGORIES} title="Gastos" accent="text-rose-400" />}
         {tab === "stocks" && <Stocks />}
+        {tab === "watchlist" && <AcoesInteressantes />}
         {tab === "quotes" && <Quotes />}
         {tab === "networth" && <NetWorth />}
         {tab === "sales" && <Sales />}

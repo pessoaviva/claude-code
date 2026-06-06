@@ -11,6 +11,21 @@ const INCOME_CATEGORIES = ["salario", "mesada", "vendas", "dividendos", "rendime
 const EXPENSE_CATEGORIES = ["assinaturas", "saidas_casa", "alimentacao", "transporte", "saude", "educacao", "lazer", "outros"];
 const GOAL_TYPES = ["patrimonio", "investimentos", "economia", "renda_passiva"];
 
+// Cotações de referência (início de junho/2026, fontes públicas) — o usuário
+// pode atualizar manualmente a qualquer momento.
+const WATCHLIST_REF_DATE = "2026-06-05";
+const WATCHLIST_SEED: { company: string; ticker: string; price: string }[] = [
+  { company: "Suzano", ticker: "SUZB3", price: "41.41" },
+  { company: "Porto Seguro", ticker: "PSSA3", price: "49.61" },
+  { company: "Petrobras", ticker: "PETR4", price: "42.83" },
+  { company: "Banco do Brasil", ticker: "BBAS3", price: "20.94" },
+  { company: "Itaú Unibanco", ticker: "ITUB4", price: "38.72" },
+  { company: "Bradesco", ticker: "BBDC4", price: "20.98" },
+  { company: "JBS", ticker: "JBSS3", price: "39.03" },
+  { company: "Equatorial", ticker: "EQTL3", price: "37.11" },
+  { company: "WEG", ticker: "WEGE3", price: "43.13" },
+];
+
 // ---- helpers ---------------------------------------------------------------
 const s = (v: unknown): string => String(v ?? "");
 const dec = (v: unknown): Decimal => Decimal.from(s(v ?? "0"));
@@ -489,9 +504,78 @@ function route(db: DB, method: string, path: string, query: URLSearchParams, bod
     }));
   }
 
+  // Watchlist — "Ações Interessantes": posição comprada × preço atual = L/P.
+  if (path === "/watchlist" && method === "GET") {
+    if (db.watchlist.length === 0 && (db._seq.watchlist ?? 0) === 0) {
+      for (const seed of WATCHLIST_SEED) {
+        db.watchlist.push({ id: nextId("watchlist"), company: seed.company, ticker: seed.ticker, quantity: "0", buy_price: "0", current_price: seed.price, price_updated_at: WATCHLIST_REF_DATE });
+      }
+    }
+    const items = db.watchlist.map(computeWatchItem);
+    let invested = Decimal.zero();
+    let current = Decimal.zero();
+    for (const it of items) {
+      invested = invested.add(it.invested);
+      current = current.add(it.currentValue);
+    }
+    const pl = current.sub(invested);
+    return {
+      refDate: WATCHLIST_REF_DATE,
+      items,
+      totals: { invested: invested.toFixed(2), currentValue: current.toFixed(2), profitLoss: pl.toFixed(2), returnPct: invested.isZero() ? "0.00" : pl.div(invested).mul(100).toFixed(2) },
+    };
+  }
+  if (path === "/watchlist" && method === "POST") {
+    const company = reqString(body, "company");
+    const ticker = reqString(body, "ticker").toUpperCase();
+    const quantity = dec(body.quantity);
+    const buyPrice = dec(body.buyPrice);
+    const currentPrice = dec(body.currentPrice);
+    if (quantity.isNegative() || buyPrice.isNegative() || currentPrice.isNegative()) throw new Error("Valores não podem ser negativos");
+    const row: Row = { id: nextId("watchlist"), company, ticker, quantity: quantity.toFixed(8), buy_price: buyPrice.toFixed(2), current_price: currentPrice.toFixed(2), price_updated_at: today() };
+    db.watchlist.push(row);
+    audit(db, { category: "change", entity: "watchlist", entityId: row.id, action: "create" });
+    return computeWatchItem(row);
+  }
+  if (path.startsWith("/watchlist/") && method === "PATCH") {
+    const id = path.slice("/watchlist/".length);
+    const row = db.watchlist.find((w) => w.id === id);
+    if (!row) throw new Error("Ação não encontrada na lista");
+    if (body.quantity != null) row.quantity = dec(body.quantity).toFixed(8);
+    if (body.buyPrice != null) row.buy_price = dec(body.buyPrice).toFixed(2);
+    if (body.currentPrice != null) {
+      row.current_price = dec(body.currentPrice).toFixed(2);
+      row.price_updated_at = today();
+    }
+    audit(db, { category: "change", entity: "watchlist", entityId: id, action: "update" });
+    return computeWatchItem(row);
+  }
+  if (path.startsWith("/watchlist/") && method === "DELETE") {
+    const row = removeById(db.watchlist, path.slice("/watchlist/".length), "Ação não encontrada na lista");
+    audit(db, { category: "change", entity: "watchlist", entityId: row.id, action: "delete" });
+    return row;
+  }
+
   if (path === "/health" && method === "GET") return { ok: true, service: "fintrack-pro", mode: "browser", time: new Date().toISOString() };
 
   throw new Error(`Rota não encontrada: ${method} ${path}`);
+}
+
+function computeWatchItem(w: Row) {
+  const qty = dec(w.quantity);
+  const buy = dec(w.buy_price);
+  const cur = dec(w.current_price);
+  const invested = qty.mul(buy);
+  const currentValue = qty.mul(cur);
+  const profit = currentValue.sub(invested);
+  return {
+    id: w.id, company: s(w.company), ticker: s(w.ticker),
+    quantity: qty.toFixed(8), buyPrice: buy.toFixed(2), currentPrice: cur.toFixed(2),
+    priceUpdatedAt: s(w.price_updated_at),
+    invested: invested.toFixed(2), currentValue: currentValue.toFixed(2),
+    profitLoss: profit.toFixed(2),
+    returnPct: invested.isZero() ? null : profit.div(invested).mul(100).toFixed(2),
+  };
 }
 
 function passiveGrowth(series: { month: string; total: string }[]): Decimal {
