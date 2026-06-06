@@ -50,7 +50,20 @@ export async function fetchQuote(ticker: string): Promise<FetchedQuote> {
   const t = ticker.trim().toUpperCase();
   const errors: string[] = [];
 
-  // 1) brapi.dev com token — caminho mais confiável (CORS suportado).
+  // 0) Netlify Function (servidor, sem CORS e sem banco). É o caminho confiável
+  //    no site publicado — a função busca a cotação e devolve o preço.
+  try {
+    const j = await fetchJson(`/.netlify/functions/quote?ticker=${encodeURIComponent(t)}`, 12000);
+    if (j?.price != null && !Number.isNaN(Number(j.price))) {
+      return { price: String(j.price), source: `${j.source ?? "netlify"} (servidor)` };
+    }
+    errors.push("função sem preço");
+  } catch (e) {
+    // Em dev local (vite), a função não existe (404) — segue para os fallbacks.
+    errors.push(`função: ${(e as Error).message}`);
+  }
+
+  // 1) brapi.dev com token (CORS suportado).
   const token = getBrapiToken();
   if (token) {
     try {

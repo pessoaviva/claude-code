@@ -1,5 +1,6 @@
-# Netlify — FinTrack Pro é um app 100% no navegador (sem backend, sem banco).
-# Deploy estático: basta publicar o build do React. Sem variáveis de ambiente.
+# Netlify — FinTrack Pro: app 100% no navegador (sem banco de dados).
+# O deploy é estático (web/dist). A ÚNICA peça de servidor é uma função
+# serverless e SEM estado que busca cotações (proxy de CORS) — não há banco.
 
 [build]
   command = "npm install && npm run build --workspace=web"
@@ -8,7 +9,12 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# SPA fallback: toda rota serve o app React.
+# Função serverless de cotação (sem banco). Chamada em:
+#   /.netlify/functions/quote?ticker=PETR4
+[functions]
+  directory = "netlify/functions"
+
+# SPA fallback: toda rota (exceto /.netlify/*, que é reservado) serve o app.
 [[redirects]]
   from = "/*"
   to = "/index.html"
