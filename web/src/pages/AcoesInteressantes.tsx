@@ -3,7 +3,7 @@ import { api } from "../lib/api";
 import { useFetch } from "../lib/useFetch";
 import { brl, dateBR, pct, signColor } from "../lib/format";
 import { Banner, Button, Card, Input, Stat, Table } from "../components/ui";
-import { fetchQuote, getBrapiToken, setBrapiToken } from "../lib/quoteFetch";
+import { fetchQuote, fetchQuotesBulk, getBrapiToken, setBrapiToken } from "../lib/quoteFetch";
 
 interface Item {
   id: string;
@@ -86,18 +86,28 @@ export function AcoesInteressantes() {
     setMsg({ kind: "info", text: "Atualizando cotações…" });
     let ok = 0;
     let fail = 0;
-    for (const r of rows) {
-      try {
-        const { price } = await fetchQuote(r.ticker);
-        const updated = await api.patch<Item>(`/watchlist/${r.id}`, { currentPrice: price });
-        setRows((rs) => rs.map((x) => (x.id === r.id ? updated : x)));
-        ok++;
-      } catch {
-        fail++;
+
+    async function setPrice(id: string, price: string) {
+      const updated = await api.patch<Item>(`/watchlist/${id}`, { currentPrice: price });
+      setRows((rs) => rs.map((x) => (x.id === id ? updated : x)));
+    }
+
+    try {
+      // Caminho rápido: 1 chamada à função (lote) no site publicado.
+      const map = await fetchQuotesBulk(rows.map((r) => r.ticker));
+      for (const r of rows) {
+        const price = map[r.ticker.toUpperCase()];
+        if (price != null) { await setPrice(r.id, price); ok++; } else fail++;
+      }
+    } catch {
+      // Reserva (dev local / função indisponível): por ação.
+      for (const r of rows) {
+        try { const { price } = await fetchQuote(r.ticker); await setPrice(r.id, price); ok++; } catch { fail++; }
       }
     }
+
     setBusyAll(false);
-    setMsg({ kind: fail === 0 ? "success" : "info", text: `Atualização concluída: ${ok} ok, ${fail} falharam.` + (fail > 0 ? " As que falharam podem ser editadas manualmente (ou configure um token brapi)." : "") });
+    setMsg({ kind: fail === 0 ? "success" : "info", text: `Atualização concluída: ${ok} ok, ${fail} falharam.` + (fail > 0 ? " As que falharam: edite manualmente ou configure um token brapi." : "") });
   }
 
   async function addStock(e: React.FormEvent) {

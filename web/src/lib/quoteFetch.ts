@@ -46,6 +46,23 @@ export interface FetchedQuote {
   source: string;
 }
 
+/**
+ * Busca em LOTE via Netlify Function (1 chamada para várias ações). Usado pelo
+ * "Atualizar todas". Lança se a função não estiver disponível (ex.: dev local),
+ * para o chamador cair no modo por-ticker.
+ */
+export async function fetchQuotesBulk(tickers: string[]): Promise<Record<string, string>> {
+  const list = tickers.map((t) => t.trim().toUpperCase()).filter(Boolean);
+  if (list.length === 0) return {};
+  const j = await fetchJson(`/.netlify/functions/quote?tickers=${encodeURIComponent(list.join(","))}`, 20000);
+  const map: Record<string, string> = {};
+  for (const r of j?.results ?? []) {
+    if (r?.price != null && !Number.isNaN(Number(r.price))) map[String(r.ticker).toUpperCase()] = String(r.price);
+  }
+  if (Object.keys(map).length === 0) throw new Error("lote sem resultados");
+  return map;
+}
+
 export async function fetchQuote(ticker: string): Promise<FetchedQuote> {
   const t = ticker.trim().toUpperCase();
   const errors: string[] = [];
