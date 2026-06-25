@@ -1,0 +1,11 @@
+{
+  "name": "nordeste",
+  "owner": { "name": "Pessoa Viva" },
+  "plugins": [
+    {
+      "name": "metodo-nordeste",
+      "source": "./plugins/metodo-nordeste",
+      "description": "Agentes do Método Nordeste para criar e vender sites"
+    }
+  ]
+}
