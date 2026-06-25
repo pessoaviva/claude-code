@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "nordeste": {
+      "source": { "source": "github", "repo": "pessoaviva/claude-code" }
+    }
+  },
+  "enabledPlugins": {
+    "metodo-nordeste@nordeste": true
+  }
+}
