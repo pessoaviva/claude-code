@@ -1,6 +1,6 @@
-# Plugin: Método Nordeste
+# Plugin: Fábrica de Sites
 
-Agentes do **Método Nordeste** para criar e vender sites (React + Vite + TypeScript +
+Agentes do **Fábrica de Sites** para criar e vender sites (React + Vite + TypeScript +
 Tailwind, 100% no navegador, com back-end opcional no Supabase).
 
 ## Os 3 agentes
@@ -24,7 +24,7 @@ plugin funcionar nas sessões do Claude Code na web (cada sessão é um ambiente
 ### Opção B — manual (dentro de uma sessão)
 ```
 /plugin marketplace add pessoaviva/claude-code
-/plugin install metodo-nordeste@nordeste
+/plugin install fabrica-de-sites@fabrica
 /reload-plugins
 ```
 

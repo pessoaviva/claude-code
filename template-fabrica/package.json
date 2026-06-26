@@ -1,9 +1,9 @@
 {
-  "name": "template-nordeste",
+  "name": "template-fabrica",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Template-base do Método Nordeste: React + Vite + TS + Tailwind, login + bloqueio por tentativas + criptografia local, e back-end opcional no Supabase (login real, nuvem, criação de contas pelo site).",
+  "description": "Template-base do Fábrica de Sites: React + Vite + TS + Tailwind, login + bloqueio por tentativas + criptografia local, e back-end opcional no Supabase (login real, nuvem, criação de contas pelo site).",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

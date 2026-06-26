@@ -1,0 +1,5 @@
+{
+  "name": "fabrica-de-sites",
+  "description": "Agentes para criar e vender sites (Fábrica de Sites): construtor de sites, integrador Supabase e caça-bugs de deploy.",
+  "version": "1.0.0"
+}

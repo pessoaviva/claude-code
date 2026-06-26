@@ -1,11 +1,11 @@
 {
-  "name": "nordeste",
+  "name": "fabrica",
   "owner": { "name": "Pessoa Viva" },
   "plugins": [
     {
-      "name": "metodo-nordeste",
-      "source": "./plugins/metodo-nordeste",
-      "description": "Agentes do Método Nordeste para criar e vender sites"
+      "name": "fabrica-de-sites",
+      "source": "./plugins/fabrica-de-sites",
+      "description": "Agentes da Fábrica de Sites: criar e vender sites para clientes"
     }
   ]
 }

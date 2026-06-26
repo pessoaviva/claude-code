@@ -1,6 +1,6 @@
 ---
 name: caca-bugs-deploy
-description: Diagnostica erros de deploy e nuvem (Vercel, Supabase, CORS, branch errada, Edge Functions) no contexto do Método Nordeste e diz exatamente o que clicar para resolver. Use quando "publicou e não funciona".
+description: Diagnostica erros de deploy e nuvem (Vercel, Supabase, CORS, branch errada, Edge Functions) no contexto do Fábrica de Sites e diz exatamente o que clicar para resolver. Use quando "publicou e não funciona".
 tools: Read, Grep, Glob, Bash
 ---
 

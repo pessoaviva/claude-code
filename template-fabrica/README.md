@@ -1,6 +1,6 @@
-# Template Nordeste 🦴
+# Fábrica de Sites — Template 🦴
 
-Esqueleto pronto para criar sistemas web de clientes pelo **Método Nordeste**.
+Esqueleto pronto para criar sistemas web de clientes pelo **Fábrica de Sites**.
 Clone, ajuste o `src/config.ts`, troque a tela de exemplo pelo negócio do cliente, e publique.
 
 ## O que já vem pronto

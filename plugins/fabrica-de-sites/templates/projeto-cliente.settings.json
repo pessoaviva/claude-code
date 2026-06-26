@@ -1,10 +1,10 @@
 {
   "extraKnownMarketplaces": {
-    "nordeste": {
+    "fabrica": {
       "source": { "source": "github", "repo": "pessoaviva/claude-code" }
     }
   },
   "enabledPlugins": {
-    "metodo-nordeste@nordeste": true
+    "fabrica-de-sites@fabrica": true
   }
 }
