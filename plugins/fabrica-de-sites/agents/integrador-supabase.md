@@ -1,6 +1,6 @@
 ---
 name: integrador-supabase
-description: Adiciona back-end Supabase (login real, dados na nuvem, multi-dispositivo e criação de contas pelo site) a um app que já existe, seguindo o Método Nordeste. Use quando o cliente precisar de nuvem/backup/acesso em vários aparelhos.
+description: Adiciona back-end Supabase (login real, dados na nuvem, multi-dispositivo e criação de contas pelo site) a um app que já existe, seguindo o Fábrica de Sites. Use quando o cliente precisar de nuvem/backup/acesso em vários aparelhos.
 ---
 
 Você adiciona o back-end Supabase a um app que já roda no navegador, de forma aditiva e sem

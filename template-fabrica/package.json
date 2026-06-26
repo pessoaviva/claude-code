@@ -1,0 +1,33 @@
+{
+  "name": "template-fabrica",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Template-base do Fábrica de Sites: React + Vite + TS + Tailwind, login + bloqueio por tentativas + criptografia local, e back-end opcional no Supabase (login real, nuvem, criação de contas pelo site).",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "build:standalone": "tsc -b && vite build --mode standalone",
+    "preview": "vite preview"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.40",
+    "tailwindcss": "^3.4.7",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.0",
+    "vite-plugin-singlefile": "^2.3.3"
+  },
+  "license": "MIT"
+}
