@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tema ESCURO (padrão) e CLARO via classe .dark no <html>.
+   Valores são canais "R G B" para suportar opacidade (bg-surface/60 etc.). */
+:root {
+  --c-bg: 248 250 252; /* slate-50  */
+  --c-surface: 255 255 255; /* white */
+  --c-line: 226 232 240; /* slate-200 */
+  --c-fg: 15 23 42; /* slate-900 */
+  --c-muted: 71 85 105; /* slate-600 */
+  --c-faint: 100 116 139; /* slate-500 */
+}
+
+.dark {
+  --c-bg: 8 18 22; /* teal-charcoal profundo (não é preto puro) */
+  --c-surface: 15 28 33;
+  --c-line: 30 46 52;
+  --c-fg: 236 247 245;
+  --c-muted: 148 173 173;
+  --c-faint: 107 134 134;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-bg text-fg antialiased;
+  background-image:
+    radial-gradient(60rem 40rem at 110% -10%, rgba(20, 184, 166, 0.18), transparent 60%),
+    radial-gradient(50rem 40rem at -10% 0%, rgba(249, 115, 22, 0.12), transparent 55%);
+  background-attachment: fixed;
+}
+
+/* Scrollbar discreta combinando com o tema. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--c-line)) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--c-line));
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Entrada suave de conteúdo. */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.25s ease-out both;
+}
