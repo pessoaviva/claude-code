@@ -1,0 +1,26 @@
+{
+  "name": "Projeto Macarujá — Engorda",
+  "short_name": "Macarujá",
+  "description": "Gestão de engorda de gado de corte da Fazenda Macarujá (marca AB): rebanho, semiconfinamento, dietas, saúde, custos e resultado.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "id": "/",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#1f3d2b",
+  "theme_color": "#1f3d2b",
+  "categories": ["business", "productivity", "agriculture"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Rebanho", "url": "./index.html#rebanho" },
+    { "name": "Semiconfinamentos", "url": "./index.html#semis" },
+    { "name": "Saúde", "url": "./index.html#saude" }
+  ]
+}
